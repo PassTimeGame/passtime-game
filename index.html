@@ -2990,15 +2990,18 @@ if(!bonusText){
 
 el("heroPanel").innerHTML=
 `
-<div class="heroCompactName">
-  <b>${h.name}</b>
-  <span style="color:#aaa;">Lv ${h.level}</span>
-</div>
+<div class="heroCompactTop">
+
+  <div class="heroCompactName">
+    <b>${h.name}</b>
+    <span style="color:#aaa;">Lv ${h.level}</span>
+  </div>
 
   <div class="heroCompactInfo">
-    <b>EQUIPMENT</b><br>
+    <b>EQUIPMENT:</b>
     ${weaponName} • ${armorName} • ${accessoryName}
   </div>
+
 </div>
 
 <div class="heroCompactBonus">
