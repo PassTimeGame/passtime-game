@@ -208,7 +208,7 @@ box-shadow:0 0 12px yellow;
 
 /* IDLE FRAME */
 .knightIdle{
-  background-position:10px 0px;
+  background-position:0px 0px;
 }
 
 /* PLAY 4-FRAME ATTACK */
@@ -535,7 +535,7 @@ function setKnightAnimation(animClass, duration = 500){
   animationPlaying = true;
 
   if(knightAnimTimer){
-    clearTimeout(knightAnimTimer);
+    clearInterval(knightAnimTimer);
     knightAnimTimer = null;
   }
 
@@ -560,28 +560,37 @@ function setKnightAnimation(animClass, duration = 500){
   }
 
   sprite.style.backgroundImage = `url("${sheet}")`;
-  sprite.style.backgroundPosition = "10px 0px";
+  sprite.style.backgroundSize = "512px 128px";
+  sprite.style.backgroundRepeat = "no-repeat";
+  sprite.style.backgroundPosition = "0px 0px";
   sprite.style.transform = moveStart;
 
-sprite.animate(
-  [
-    { backgroundPosition: "0px 0px", transform: moveStart },
-    { backgroundPosition: "-384px 0px", transform: moveEnd }
-  ],
-  {
-    duration: duration,
-    easing: "steps(3, end)",
-    iterations: 1
-  }
-);
+  let frames = ["0px 0px", "-128px 0px", "-256px 0px", "-384px 0px"];
+  let frame = 0;
+  let frameTime = duration / frames.length;
 
-  knightAnimTimer = setTimeout(() => {
-    sprite.style.backgroundImage = `url("sprites/knight_attack.png")`;
-    sprite.style.backgroundPosition = "0px 0px";
-    sprite.style.transform = "translate(0px, 0px)";
-    animationPlaying = false;
-    knightAnimTimer = null;
-  }, duration);
+  knightAnimTimer = setInterval(() => {
+    sprite.style.backgroundPosition = frames[frame];
+
+    if(frame === frames.length - 1){
+      sprite.style.transform = moveEnd;
+    }
+
+    frame++;
+
+    if(frame >= frames.length){
+      clearInterval(knightAnimTimer);
+
+      setTimeout(() => {
+        sprite.style.backgroundImage = `url("sprites/knight_attack.png")`;
+        sprite.style.backgroundSize = "512px 128px";
+        sprite.style.backgroundPosition = "0px 0px";
+        sprite.style.transform = "translate(0px, 0px)";
+        animationPlaying = false;
+        knightAnimTimer = null;
+      }, frameTime);
+    }
+  }, frameTime);
 }
 
 function waitForAnimationThenNextTurn(){
