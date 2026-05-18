@@ -563,21 +563,21 @@ function setKnightAnimation(animClass, duration = 500){
   sprite.style.backgroundPosition = "10px 0px";
   sprite.style.transform = moveStart;
 
-  sprite.animate(
-    [
-      { backgroundPosition: "10px 0px", transform: moveStart },
-      { backgroundPosition: "-384px 0px", transform: moveEnd }
-    ],
-    {
-      duration: duration,
-      easing: "steps(4)",
-      iterations: 1
-    }
-  );
+sprite.animate(
+  [
+    { backgroundPosition: "0px 0px", transform: moveStart },
+    { backgroundPosition: "-384px 0px", transform: moveEnd }
+  ],
+  {
+    duration: duration,
+    easing: "steps(3, end)",
+    iterations: 1
+  }
+);
 
   knightAnimTimer = setTimeout(() => {
     sprite.style.backgroundImage = `url("sprites/knight_attack.png")`;
-    sprite.style.backgroundPosition = "10px 0px";
+    sprite.style.backgroundPosition = "0px 0px";
     sprite.style.transform = "translate(0px, 0px)";
     animationPlaying = false;
     knightAnimTimer = null;
