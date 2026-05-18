@@ -456,7 +456,7 @@ html, body{
   /* MENU AREA */
 .menu{
   height:auto;
-  padding:6px 6px 66px 6px;
+  padding:6px;
   gap:6px;
 }
 
@@ -465,6 +465,7 @@ html, body{
   grid-template-columns:1fr;
   grid-template-areas:
     "hero"
+    "hotbar"
     "desc";
   height:auto;
   gap:6px;
@@ -547,21 +548,16 @@ html, body{
 }
 
 #combatHotbar{
-  position:fixed;
-  left:0;
-  right:0;
-  bottom:0;
-  z-index:200;
+  grid-area:hotbar;
 
   display:grid;
   grid-template-columns:repeat(4, 1fr);
   gap:4px;
 
-  padding:6px;
-  padding-bottom:calc(6px + env(safe-area-inset-bottom));
+  padding:4px;
 
   background:#05050a;
-  border-top:3px solid #333;
+  border:2px solid #333;
 }
 
 .hotbarBtn{
@@ -619,13 +615,12 @@ html, body{
 <div class="menu">
 <div class="menuRow">
 <div class="panelHero" id="heroPanel"></div>
+<div id="combatHotbar"></div>
 <div class="panelAbilities" id="abilityPanel"></div>
 <div class="panelDesc" id="descPanel"></div>
 </div>
 <div class="log" id="log"></div>
 </div>
-
-<div id="combatHotbar"></div>
 
 <div id="tooltip"></div>
 
