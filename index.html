@@ -206,6 +206,10 @@ box-shadow:0 0 12px yellow;
   margin-top:-20px;
 }
 
+	#knightSprite{
+  transform:translate(0px, -20px);
+}
+
 /* IDLE FRAME */
 .knightIdle{
   background-position:0px 0px;
@@ -526,10 +530,11 @@ html, body{
     z-index:10;
   }
 
-  #knightSprite{
-    position:relative;
-    z-index:30;
-  }
+#knightSprite{
+  position:relative;
+  z-index:30;
+  transform:translate(0px, -20px);
+}
 
 }
 
