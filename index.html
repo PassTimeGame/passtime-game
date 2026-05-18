@@ -417,9 +417,9 @@ html, body{
 }
 
   .card{
-    font-size:11px;
-    padding:4px;
-    margin-bottom:4px;
+    font-size:10px;
+    padding:3px;
+    margin-bottom:2px;
   }
 
   .cardTop{
@@ -3543,8 +3543,7 @@ render();
 ">
 
   <div style="width:70%;">
-    <b>${h.name}</b><br>
-    Lv ${h.level}<br>
+    <b>${h.name} <span style="color:gold;font-size:11px;">Lv.${h.level}</span></b><br>
     HP ${h.hp}/${h.maxHp}
 
     <div class="hpBar">
