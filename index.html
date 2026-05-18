@@ -432,11 +432,11 @@ html, body{
   }
 
   .knightSprite{
-    width:96px;
-    height:96px;
-    background-size:384px 96px;
-    margin-top:-10px;
-    margin-bottom:-20px;
+    width:128px;
+    height:128px;
+    background-size:512px 128px;
+    margin-top:-15px;
+    margin-bottom:-25px;
   }
 
   .resourceText{
@@ -566,7 +566,7 @@ function setKnightAnimation(animClass, duration = 500){
   sprite.animate(
     [
       { backgroundPosition: "10px 0px", transform: moveStart },
-      { backgroundPosition: "-512px 0px", transform: moveEnd }
+      { backgroundPosition: "-384px 0px", transform: moveEnd }
     ],
     {
       duration: duration,
