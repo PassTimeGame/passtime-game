@@ -354,6 +354,10 @@ border-color:deepskyblue;
 border-color:crimson;
 }
 
+#combatHotbar{
+  display:none;
+}
+
 /* ================= MOBILE / IPHONE PORTRAIT LAYOUT ================= */
 
 html, body{
@@ -450,21 +454,21 @@ html, body{
   }
 
   /* MENU AREA */
-  .menu{
-    height:auto;
-    padding:6px;
-    gap:6px;
-  }
+.menu{
+  height:auto;
+  padding:6px 6px 66px 6px;
+  gap:6px;
+}
 
-  .menuRow{
-    display:grid;
-    grid-template-columns:1fr 1.25fr;
-    grid-template-areas:
-      "hero abilities"
-      "desc desc";
-    height:auto;
-    gap:6px;
-  }
+.menuRow{
+  display:grid;
+  grid-template-columns:1fr;
+  grid-template-areas:
+    "hero"
+    "desc";
+  height:auto;
+  gap:6px;
+}
 
   .panelHero{
     grid-area:hero;
@@ -474,22 +478,18 @@ html, body{
     padding:6px;
   }
 
-  .panelAbilities{
-    grid-area:abilities;
-    width:100%;
-    max-height:22vh;
-    min-height:110px;
-    padding:6px;
-  }
+.panelAbilities{
+  display:none;
+}
 
-  .panelDesc{
-    grid-area:desc;
-    width:100%;
-    max-height:15vh;
-    min-height:70px;
-    padding:6px;
-    font-size:12px;
-  }
+.panelDesc{
+  grid-area:desc;
+  width:100%;
+  max-height:20vh;
+  min-height:90px;
+  padding:6px;
+  font-size:12px;
+}
 
   .panelAbilities button{
     width:100%;
@@ -546,6 +546,63 @@ html, body{
   transform:translate(0px, -20px);
 }
 
+#combatHotbar{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index:200;
+
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:4px;
+
+  padding:6px;
+  padding-bottom:calc(6px + env(safe-area-inset-bottom));
+
+  background:#05050a;
+  border-top:3px solid #333;
+}
+
+.hotbarBtn{
+  position:relative;
+  min-height:46px;
+  margin:0;
+  padding:4px 2px;
+  font-size:10px;
+  line-height:1.05;
+  border:2px solid #555;
+  border-radius:8px;
+  background:#222;
+  color:white;
+  box-shadow:none;
+  overflow:hidden;
+}
+
+.hotbarBtn.locked{
+  opacity:0.45;
+  filter:grayscale(100%);
+}
+
+.hotbarCost{
+  display:block;
+  margin-top:3px;
+  font-size:8px;
+  color:#ccc;
+}
+
+.cooldownOverlay{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,0.65);
+  color:white;
+  font-size:24px;
+  font-weight:bold;
+}
+
 }
 
 </style>
@@ -567,6 +624,8 @@ html, body{
 </div>
 <div class="log" id="log"></div>
 </div>
+
+<div id="combatHotbar"></div>
 
 <div id="tooltip"></div>
 
@@ -1287,6 +1346,115 @@ t.innerHTML = html;
 
 function hideTooltip(){
 el("tooltip").style.display="none";
+}
+
+function isMobile(){
+  return window.matchMedia("(max-width: 768px)").matches;
+}
+
+function resetStoryPanel(){
+  el("descPanel").innerHTML =
+`
+<b>STORY</b>
+<hr>
+
+<div id="storyTextBox" style="
+  margin-bottom:0;
+  min-height:90px;
+  max-height:100%;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-right:4px;
+">
+${storyTyping ? displayedStoryText : storyText}
+</div>
+`;
+}
+
+function showAbilityPreview(hero, ability){
+  let cost = ability.stamina || ability.cost || 0;
+
+  el("descPanel").innerHTML = `
+    <b>${ability.name}</b><br>
+    Power: ${ability.power}<br>
+    Cost: ${cost ? cost : "Free"}<br>
+    Cooldown: ${ability.cooldown > 0 ? ability.cooldown : "Ready"}<br>
+    Target: ${ability.target}<br>
+    ${ability.apply ? `Effect: ${ability.apply}<br>` : ""}
+    <br>
+    <span style="color:#aaa;">Tap to cast. Hold to preview.</span>
+  `;
+}
+
+function renderHotbar(){
+  let bar = el("combatHotbar");
+  if(!bar) return;
+
+  if(!isMobile()){
+    bar.innerHTML = "";
+    return;
+  }
+
+  let hero = heroes[currentHeroIndex];
+
+  if(!hero || hero.hp <= 0 || hero.dead || !hero.abilities){
+    bar.innerHTML = "";
+    return;
+  }
+
+  bar.innerHTML = "";
+
+  hero.abilities.forEach((ability, ai) => {
+    let btn = document.createElement("button");
+    let cost = ability.stamina || ability.cost || 0;
+    let locked = ability.cooldown > 0;
+
+    btn.className = `hotbarBtn ${locked ? "locked" : ""}`;
+
+    btn.innerHTML = `
+      ${ability.name}
+      <span class="hotbarCost">${cost ? cost : "Free"}</span>
+      ${locked ? `<span class="cooldownOverlay">${ability.cooldown}</span>` : ""}
+    `;
+
+    let holdTimer = null;
+    let didPreview = false;
+
+    btn.addEventListener("touchstart", () => {
+      didPreview = false;
+
+      holdTimer = setTimeout(() => {
+        didPreview = true;
+        showAbilityPreview(hero, ability);
+      }, 450);
+    }, {passive:true});
+
+    btn.addEventListener("touchend", () => {
+      clearTimeout(holdTimer);
+
+      if(didPreview) return;
+
+      if(locked){
+        showAbilityPreview(hero, ability);
+        return;
+      }
+
+      heroAction(currentHeroIndex, ai);
+      setTimeout(resetStoryPanel, 100);
+    });
+
+    btn.addEventListener("click", () => {
+      if(locked){
+        showAbilityPreview(hero, ability);
+        return;
+      }
+
+      heroAction(currentHeroIndex, ai);
+      setTimeout(resetStoryPanel, 100);
+    });
+
+    bar.appendChild(btn);
+  });
 }
 
 function typeStory(html){
@@ -2797,6 +2965,8 @@ function showHero(i){
 
 currentHeroIndex = i;
 
+renderHotbar();
+
 let h=heroes[i];
 
 el("heroPanel").innerHTML=
@@ -2961,22 +3131,8 @@ invBtn.onclick = showBackpack;
 
 ab.appendChild(invBtn);
 
-el("descPanel").innerHTML=
-`
-<b>STORY</b>
-<hr>
-
-<div id="storyTextBox" style="
-  margin-bottom:0;
-  min-height:90px;
-  max-height:100%;
-  overflow-y:auto;
-  overflow-x:hidden;
-  padding-right:4px;
-">
-${storyTyping ? displayedStoryText : storyText}
-</div>
-`;
+resetStoryPanel();
+renderHotbar();
 }
 
 /* ================= HERO ACTION ================= */
@@ -3662,6 +3818,8 @@ background:${
 });
 
 renderTurnBar();
+
+renderHotbar();
 
 }
 /* =========================================================
