@@ -624,23 +624,23 @@ function setKnightAnimation(animClass, duration = 500){
   }
 
   let sheet = "sprites/knight_attack.png";
-  let moveStart = "translate(0px, 0px)";
-  let moveEnd = "translate(0px, 0px)";
+  let moveStart = "translate(0px, -20px)";
+  let moveEnd = "translate(0px, -20px)";
 
   if(animClass === "knightShield"){
     sheet = "sprites/knight_shield.png";
-    moveStart = "translate(5px, 5px)";
-    moveEnd = "translate(5px, 5px)";
-  }
-  else if(animClass === "knightQuickAttack"){
-    sheet = "sprites/knight_quickattack.png";
     moveStart = "translate(5px, -5px)";
     moveEnd = "translate(5px, -5px)";
   }
+  else if(animClass === "knightQuickAttack"){
+    sheet = "sprites/knight_quickattack.png";
+    moveStart = "translate(5px, -15px)";
+    moveEnd = "translate(5px, -15px)";
+  }
   else if(animClass === "knightShieldBash"){
     sheet = "sprites/knight_shieldBash.png";
-    moveStart = "translate(10px, 2px)";
-    moveEnd = "translate(10px, 2px)";
+    moveStart = "translate(10px, -8px)";
+    moveEnd = "translate(10px, -8px)";
   }
 
   sprite.style.backgroundImage = `url("${sheet}")`;
@@ -669,7 +669,7 @@ function setKnightAnimation(animClass, duration = 500){
         sprite.style.backgroundImage = `url("sprites/knight_attack.png")`;
         sprite.style.backgroundSize = "512px 128px";
         sprite.style.backgroundPosition = "0px 0px";
-        sprite.style.transform = "translate(0px, 0px)";
+        sprite.style.transform = "translate(0px, -20px)";
         animationPlaying = false;
         knightAnimTimer = null;
       }, frameTime);
