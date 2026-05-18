@@ -375,13 +375,14 @@ html, body{
   }
 
   /* BATTLEFIELD: keep heroes/enemies side by side */
-  .screen{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    height:34vh;
-    padding:6px;
-    gap:6px;
-  }
+.screen{
+  display:grid;
+  grid-template-columns:1.25fr 0.75fr;
+  height:34vh;
+  padding:6px;
+  gap:6px;
+  overflow:visible;
+}
 
   .side{
     width:100%;
@@ -474,6 +475,34 @@ html, body{
     margin-top:-18px;
     margin-bottom:-30px;
   }
+
+  .screen{
+    overflow:visible;
+  }
+
+#party{
+  overflow:visible;
+  position:relative;
+  z-index:5;
+  padding-right:0;
+}
+
+  #enemies{
+    position:relative;
+    z-index:1;
+  }
+
+  #party .card{
+    overflow:visible;
+    position:relative;
+    z-index:10;
+  }
+
+  #knightSprite{
+    position:relative;
+    z-index:30;
+  }
+
 }
 
 </style>
