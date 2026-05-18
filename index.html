@@ -191,7 +191,7 @@ box-shadow:0 0 12px yellow;
 }
 
 .knightSprite{
-  width:175px;
+  width:138px;
   height:128px;
 
   background-image:url("sprites/knight_attack.png");
@@ -201,6 +201,7 @@ box-shadow:0 0 12px yellow;
 
   image-rendering:pixelated;
 
+  margin-left:-18px;
   margin-bottom:-25px;
   margin-top:-15px;
 }
@@ -377,7 +378,7 @@ html, body{
   /* BATTLEFIELD: keep heroes/enemies side by side */
 .screen{
   display:grid;
-  grid-template-columns:1.25fr 0.75fr;
+  grid-template-columns:1.35fr 0.65fr;
   height:34vh;
   padding:6px;
   gap:6px;
@@ -468,13 +469,16 @@ html, body{
     font-size:11px;
   }
 
-  .knightSprite{
-    width:175px;
-    height:128px;
-    background-size:512px 128px;
-    margin-top:-18px;
-    margin-bottom:-30px;
-  }
+.knightSprite{
+  width:138px;
+  height:128px;
+
+  background-size:512px 128px;
+
+  margin-left:-18px;
+  margin-top:-18px;
+  margin-bottom:-30px;
+}
 
   .screen{
     overflow:visible;
