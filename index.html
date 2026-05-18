@@ -487,6 +487,39 @@ html, body{
   line-height:1.15;
 }
 
+.heroCompactTop{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:8px;
+}
+
+.heroCompactName{
+  flex:0 0 auto;
+  font-size:11px;
+}
+
+.heroCompactInfo{
+  flex:1;
+  text-align:right;
+  font-size:9px;
+  color:#bbb;
+  line-height:1.15;
+}
+
+.heroCompactBonus{
+  margin-top:2px;
+  font-size:9px;
+  color:#8fd;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.heroCompactVitals{
+  margin-top:3px;
+}
+
 .panelAbilities{
   display:none;
 }
@@ -777,8 +810,6 @@ function getItemScoreForHero(hero, item){
     magic:1,
     resist:1,
     hp:0.5,
-    mp:0.5,
-    stamina:0.5,
     speed:0.8,
     critRate:12,
     critMult:8
@@ -1097,8 +1128,6 @@ let bonus = {
   magic:0,
   resist:0,
   hp:0,
-  mp:0,
-  stamina:0,
   speed:0,
   critRate:0,
   critMult:0
@@ -1121,8 +1150,6 @@ return {
   magic:(entity.magic||0)+bonus.magic,
   resist:(entity.resist||0)+bonus.resist,
   hp:(entity.maxHp||0)+bonus.hp,
-  mp:(entity.mp||0)+bonus.mp,
-  stamina:(entity.stamina||0)+bonus.stamina,
   speed:(entity.speed||0)+bonus.speed,
   critRate:(entity.critRate||0)+bonus.critRate,
   critMult:(entity.critMult||0)+bonus.critMult
@@ -1187,23 +1214,7 @@ function tickCooldowns(entity){
   });
 }
  
-  // MP regen
-  if(entity.maxMp != null){
-    let pct = entity.mpRegenPct ?? 0.08;
 
-    let gain = Math.ceil(entity.maxMp * pct);
-
-    entity.mp = Math.min(entity.maxMp, entity.mp + gain);
-  }
-
-  // STAMINA regen
-  if(entity.maxStamina != null){
-    let pct = entity.staminaRegenPct ?? 0.10;
-
-    let gain = Math.ceil(entity.maxStamina * pct);
-
-    entity.stamina = Math.min(entity.maxStamina, entity.stamina + gain);
-  }
 }
 
 
@@ -1375,12 +1386,10 @@ ${storyTyping ? displayedStoryText : storyText}
 }
 
 function showAbilityPreview(hero, ability){
-  let cost = ability.stamina || ability.cost || 0;
 
   el("descPanel").innerHTML = `
     <b>${ability.name}</b><br>
     Power: ${ability.power}<br>
-    Cost: ${cost ? cost : "Free"}<br>
     Cooldown: ${ability.cooldown > 0 ? ability.cooldown : "Ready"}<br>
     Target: ${ability.target}<br>
     ${ability.apply ? `Effect: ${ability.apply}<br>` : ""}
@@ -1409,15 +1418,14 @@ function renderHotbar(){
 
   hero.abilities.forEach((ability, ai) => {
     let btn = document.createElement("button");
-    let cost = ability.stamina || ability.cost || 0;
-    let locked = ability.cooldown > 0;
+
+let locked = ability.cooldown > 0;
 
     btn.className = `hotbarBtn ${locked ? "locked" : ""}`;
 
     btn.innerHTML = `
       ${ability.name}
-      <span class="hotbarCost">${cost ? cost : "Free"}</span>
-      ${locked ? `<span class="cooldownOverlay">${ability.cooldown}</span>` : ""}
+        ${locked ? `<span class="cooldownOverlay">${ability.cooldown}</span>` : ""}
     `;
 
     let holdTimer = null;
@@ -1567,21 +1575,19 @@ let heroes = [
   _class:"Knight",
   level:1,xp:0,
   hp:100,maxHp:100,
-  stamina:50,maxStamina:50,
   attack:10,def:8,magic:3,resist:6,
   speed:6,
   critRate:0.06,critMult:1.5,
-  staminaRegenPct: 0.15,
   status:{},
   equipment:{weapon:null,armor:null,accessory:null},
 abilities:[ 
-{name:"Quick Slash",type:"physical",power:8,stamina:0,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
+{name:"Quick Slash",type:"physical",power:8,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
   
-{name:"Guard Break",type:"physical",power:16,stamina:12,cooldownMax:2,cooldown:0,scale:"attack",target:"enemy"},
+{name:"Guard Break",type:"physical",power:16,cooldownMax:2,cooldown:0,scale:"attack",target:"enemy"},
   
-{name:"Shield Bash",type:"physical",power:12,stamina:14,cooldownMax:4,cooldown:0,scale:"attack",apply:"stun",target:"enemy"},
+{name:"Shield Bash",type:"physical",power:12,cooldownMax:4,cooldown:0,scale:"attack",apply:"stun",target:"enemy"},
 
-{name:"Defend",type:"support",power:0,stamina:8,cooldownMax:2,cooldown:0,scale:"attack",target:"self",apply:"defend"}
+{name:"Defend",type:"support",power:0,cooldownMax:2,cooldown:0,scale:"attack",target:"self",apply:"defend"}
 
 ]
 }
@@ -2081,11 +2087,11 @@ const items = [
 
   { id:"dragon_scale", name:"Dragon Scale Armor", slot:"armor", rarity:"rare", stats:{ def:7, hp:5 } },
 
-  { id:"ring_magic", name:"Mage Ring", slot:"accessory", rarity:"common", stats:{ magic:4 } },
+  { id:"ring_magic", name:"Mage Ring", slot:"accessory", rarity:"common", stats:{ resist:2, critRate:0.03 } },
 
   { id:"ring_vitality", name:"Ring of Vitality", slot:"accessory", rarity:"uncommon", stats:{ hp:10 } },
 
-  { id:"ring_ancient", name:"Ancient Ring", slot:"accessory", rarity:"rare", stats:{ magic:3, mp:10 } },
+  { id:"ring_ancient", name:"Ancient Ring", slot:"accessory", rarity:"rare", stats:{ resist:3, critRate:0.06, hp:8 } },
 
 // ====== Wave Specific Items ====== //
 { id:"shadow_dagger", name:"Shadow Dagger", slot:"weapon", rarity:"common", waveMin:1, waveMax:5, stats:{ attack:4, speed:1 } },
@@ -2110,23 +2116,23 @@ const items = [
 
 { id:"king_tooth_blade", name:"Goblin King Tooth Blade", slot:"weapon", rarity:"rare", waveMin:11, waveMax:15, stats:{ attack:12, critRate:0.1 } },
 
-{ id:"cave_spirit_talisman", name:"Cave Spirit Talisman", slot:"accessory", rarity:"uncommon", waveMin:11, waveMax:15, stats:{ resist:4, magic:2 } },
+{ id:"cave_spirit_talisman", name:"Cave Spirit Talisman", slot:"accessory", rarity:"uncommon", waveMin:11, waveMax:15, stats:{ resist:5, hp:8 } },
 
 { id:"wolffang_sword", name:"Wolffang Sword", slot:"weapon", rarity:"uncommon", waveMin:16, waveMax:20, stats:{ attack:10, speed:2 } },
 
 { id:"entwood_carapace", name:"Entwood Carapace", slot:"armor", rarity:"rare", waveMin:16, waveMax:20, stats:{ def:14, resist:6 } },
 
-{ id:"spore_core_fragment", name:"Spore Core Fragment", slot:"accessory", rarity:"rare", waveMin:16, waveMax:20, stats:{ magic:6, hp:12 } },
+{ id:"spore_core_fragment", name:"Spore Core Fragment", slot:"accessory", rarity:"rare", waveMin:16, waveMax:20, stats:{ resist:5, hp:18, critRate:0.05 } },,
 
 { id:"beast_claw_blade", name:"Beast Claw Blade", slot:"weapon", rarity:"rare", waveMin:16, waveMax:20, stats:{ attack:15, critRate:0.12 } },
 
-{ id:"arcane_relic_staff", name:"Arcane Relic Staff", slot:"weapon", rarity:"uncommon", waveMin:21, stats:{ magic:10 } },
+{ id:"arcane_relic_staff", name:"Arcane Relic Staff", slot:"weapon", rarity:"uncommon", waveMin:21, stats:{ attack:7, critRate:0.05 } },
 
-{ id:"voidwoven_robe", name:"Voidwoven Robe", slot:"armor", rarity:"rare", waveMin:21, stats:{ magic:6, resist:5 } },
+{ id:"voidwoven_robe", name:"Voidwoven Robe", slot:"armor", rarity:"rare", waveMin:21, stats:{ resist:8, hp:14, speed:1 } },
 
 { id:"ancient_dragon_scale", name:"Ancient Dragon Scale", slot:"armor", rarity:"legendary", waveMin:21, stats:{ def:10, resist:10, hp:15 } },
 
-{ id:"void_core_ring", name:"Void Core Ring", slot:"accessory", rarity:"legendary", waveMin:21, stats:{ magic:12, critRate:0.15 } },
+{ id:"void_core_ring", name:"Void Core Ring", slot:"accessory", rarity:"legendary", waveMin:21, stats:{ attack:8, critRate:0.18, critMult:0.25 } },
 
 
 // ================= ROYAL ASSASSIN LOOT =================
@@ -2145,7 +2151,7 @@ const items = [
 
 // ================= GOBLIN KING LOOT =================
 { id:"crown_of_goblins", name:"Goblin King's Crown", slot:"accessory", rarity:"legendary", bossOnly: "goblin_king",
-  stats:{ attack:3, stamina:10 } },
+  stats:{ attack:5, speed:2, critRate:0.08 } },
 
 { id:"royal_goblin_blade", name:"Royal Goblin Cleaver", slot:"weapon", rarity:"legendary", bossOnly: "goblin_king",
   stats:{ attack:15 } },
@@ -2156,7 +2162,7 @@ const items = [
 
 // ================= EVIL MAGE LOOT =================
 { id:"void_tome", name:"Void Tome", slot:"weapon", rarity:"legendary", bossOnly: "evil_mage",
-  stats:{ magic:16, mp:25 } },
+  stats:{ attack:10, critRate:0.12, critMult:0.35 } },
 ];
 
 const rarityRank = {
@@ -2361,8 +2367,6 @@ function applyDevStart(){
       h.magic += 2;
       h.resist += 2;
 
-      if(h.maxMp != null) h.maxMp += 4;
-      if(h.maxStamina != null) h.maxStamina += 4;
     }
 
     h.hp = h.maxHp;
@@ -2577,15 +2581,13 @@ typeStory(storyText);
     _class:"PalaceGuard",
     level:4,xp:0,
     hp:90,maxHp:90,
-    stamina:60,maxStamina:60,
     attack:12,def:10,magic:3,resist:6,
     speed:7,
     critRate:0.12,critMult:1.5,
-    staminaRegenPct: 0.14,
     status:{},
     abilities:[
-      {name:"Spear Strike",type:"physical",power:14,stamina:5,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
-      {name:"Shield Wall",type:"support",power:0,stamina:6,cooldownMax:3,cooldown:0,scale:"attack",target:"self"}
+      {name:"Spear Strike",type:"physical",power:14,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
+      {name:"Shield Wall",type:"support",power:0,cooldownMax:3,cooldown:0,scale:"attack",target:"self"}
     ]
   });
 
@@ -2594,15 +2596,13 @@ recruit({
     _class:"PalaceGuard",
     level:4,xp:0,
     hp:90,maxHp:90,
-    stamina:60,maxStamina:60,
     attack:12,def:10,magic:3,resist:6,
     speed:7,
     critRate:0.12,critMult:1.5,
-    staminaRegenPct: 0.14,
     status:{},
     abilities:[
-      {name:"Spear Strike",type:"physical",power:14,stamina:5,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
-      {name:"Shield Wall",type:"support",power:0,stamina:6,cooldownMax:3,cooldown:0,scale:"attack",target:"self"}
+      {name:"Spear Strike",type:"physical",power:14,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
+      {name:"Shield Wall",type:"support",power:0,cooldownMax:3,cooldown:0,scale:"attack",target:"self"}
     ]
   });
 }
@@ -2634,9 +2634,6 @@ recruit({
   hp: scaleStat(85, rogueLevel, 0.12),
   maxHp: scaleStat(85, rogueLevel, 0.12),
 
-  stamina: scaleStat(60, rogueLevel, 0.05),
-  maxStamina: scaleStat(60, rogueLevel, 0.05),
-
   attack: scaleStat(11, rogueLevel, 0.10),
   def: scaleStat(5, rogueLevel, 0.08),
   magic: scaleStat(4, rogueLevel, 0.10),
@@ -2645,18 +2642,17 @@ recruit({
   speed:12,
   critRate:0.2,
   critMult:1.8,
-  staminaRegenPct: 0.14,
 
   status:{},
     equipment:{weapon:null,armor:null,accessory:null},
 abilities:[
-  {name:"Quick Strike",type:"physical",power:9,stamina:4,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
+  {name:"Quick Strike",type:"physical",power:9,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
   
-{name:"Backstab",type:"physical",power:24,stamina:10,cooldownMax:2,cooldown:0,scale:"attack",target:"enemy"},
+{name:"Backstab",type:"physical",power:24,cooldownMax:2,cooldown:0,scale:"attack",target:"enemy"},
   
-{name:"Poison Blade",type:"physical",power:14,stamina:12,cooldownMax:3,cooldown:0,scale:"attack",apply:"poison",target:"enemy"},
+{name:"Poison Blade",type:"physical",power:14,cooldownMax:3,cooldown:0,scale:"attack",apply:"poison",target:"enemy"},
   
-{name:"Smoke Dodge",type:"support",power:0,stamina:8,cooldownMax:3,cooldown:0,scale:"attack",target:"self",apply:"defend"}
+{name:"Smoke Dodge",type:"support",power:0,cooldownMax:3,cooldown:0,scale:"attack",target:"self",apply:"defend"}
 
 ]
   });
@@ -2723,9 +2719,6 @@ recruit({
   hp: scaleStat(95, clericLevel, 0.16),
   maxHp: scaleStat(95, clericLevel, 0.16),
 
-  stamina: scaleStat(65, clericLevel, 0.05),
-  maxStamina: scaleStat(65, clericLevel, 0.05),
-
   attack: scaleStat(6, clericLevel, 0.10),
   def: scaleStat(10, clericLevel, 0.14),
   magic: scaleStat(15, clericLevel, 0.14),
@@ -2734,7 +2727,6 @@ recruit({
   speed: 10,
   critRate: 0.1,
   critMult: 1.5,
-  staminaRegenPct: 0.16,
   status:{},
 
     equipment:{weapon:null,armor:null,accessory:null},
@@ -2843,9 +2835,6 @@ recruit({
   hp: scaleStat(105, mageLevel, 0.18),
   maxHp: scaleStat(105, mageLevel, 0.18),
 
-  stamina: scaleStat(70, mageLevel, 0.05),
-  maxStamina: scaleStat(70, mageLevel, 0.05),
-
   attack: scaleStat(8, mageLevel, 0.10),
   def: scaleStat(9, mageLevel, 0.12),
   magic: scaleStat(26, mageLevel, 0.20),
@@ -2854,7 +2843,6 @@ recruit({
   speed: 13,
   critRate: 0.15,
   critMult: 1.6,
-  staminaRegenPct: 0.14,
   status:{},
     equipment:{weapon:null,armor:null,accessory:null},
 abilities:[
@@ -2972,20 +2960,39 @@ renderHotbar();
 
 let h=heroes[i];
 
+let weaponName = h.equipment?.weapon ? h.equipment.weapon.name : "None";
+let armorName = h.equipment?.armor ? h.equipment.armor.name : "None";
+let accessoryName = h.equipment?.accessory ? h.equipment.accessory.name : "None";
+
+let bonusText = [
+  h.equipment?.weapon ? formatItemStats(h.equipment.weapon) : "",
+  h.equipment?.armor ? formatItemStats(h.equipment.armor) : "",
+  h.equipment?.accessory ? formatItemStats(h.equipment.accessory) : ""
+].filter(x => x && x.trim()).join(" ");
+
+if(!bonusText){
+  bonusText = "No bonuses";
+}
+
 el("heroPanel").innerHTML=
-`<b>${h.name}</b> <span style="font-size:12px;color:#aaa;">Lv ${h.level}</span><br>
+`
+<div class="heroCompactTop">
+  <div class="heroCompactName">
+    <b>${h.name}</b><br>
+    <span style="color:#aaa;">Lv ${h.level}</span>
+  </div>
 
-EQUIPMENT<br>
-Weapon: ${h.equipment?.weapon ? h.equipment.weapon.name : "None"}<br>
-Armor: ${h.equipment?.armor ? h.equipment.armor.name : "None"}<br>
-Accessory: ${h.equipment?.accessory ? h.equipment.accessory.name : "None"}<br>
+  <div class="heroCompactInfo">
+    <b>EQUIPMENT</b><br>
+    ${weaponName} • ${armorName} • ${accessoryName}
+  </div>
+</div>
 
-BONUSES<br>
-${h.equipment?.weapon ? formatItemStats(h.equipment.weapon) : ""}
-${h.equipment?.armor ? formatItemStats(h.equipment.armor) : ""}
-${h.equipment?.accessory ? formatItemStats(h.equipment.accessory) : ""}
-<br>
+<div class="heroCompactBonus">
+  <b>BONUSES:</b> ${bonusText}
+</div>
 
+<div class="heroCompactVitals">
 HP ${h.hp}/${h.maxHp}<br>
 
 <div class="hpBar">
@@ -3009,10 +3016,7 @@ XP ${h.xp || 0}/${xpToNext(h.level)}
 <div class="xpFill" style="width:${Math.min(100, ((h.xp||0)/xpToNext(h.level))*100)}%"></div>
 </div>
 
-<br>
-${h.stamina!=null
-? `ST ${h.stamina}/${h.maxStamina}`
-: `MP ${h.mp}/${h.maxMp}`}`;
+`;
 
 let ab=el("abilityPanel");
 
@@ -3258,8 +3262,6 @@ return;
 }
 
 if(a.name === "Guardian Aura"){
-  if(h.stamina < (a.stamina||0)) return;
-  h.stamina -= (a.stamina||0);
 
   alive(heroes).forEach(t=>{
     let heal = a.power + Math.floor(h.def * 0.5);
@@ -3281,8 +3283,6 @@ waitForAnimationThenNextTurn();
 }
 
 if(a.name === "Vanish"){
-  if(h.stamina < (a.stamina||0)) return;
-  h.stamina -= (a.stamina||0);
 
   h.evade = 1;
 
@@ -3295,8 +3295,7 @@ if(a.name === "Vanish"){
 }
 
 if(a.name === "Sanctuary"){
-  if(h.mp < (a.cost||0)) return;
-  h.mp -= (a.cost||0);
+
 
   alive(heroes).forEach(t=>{
     let heal = a.power + Math.floor(h.magic * 0.5);
@@ -3320,8 +3319,7 @@ if(a.name === "Sanctuary"){
 }
 
 if(a.name === "Arcane Barrier"){
-  if(h.mp < (a.cost||0)) return;
-  h.mp -= (a.cost||0);
+
 
   h.arcaneBarrier = 45 + Math.floor(h.magic * 1.2);
 
@@ -3335,14 +3333,6 @@ if(a.name === "Arcane Barrier"){
 
 if(a.cooldown>0) return;
 
-if(h.stamina!=null){
-if(h.stamina < (a.stamina||0)) return;
-h.stamina -= (a.stamina||0);
-}
-else{
-if(h.mp < (a.cost||0)) return;
-h.mp -= (a.cost||0);
-}
 
 let targets = getTargets(h, a);
 if(!targets.length) return;
@@ -3888,15 +3878,6 @@ h.resist += 2;
   // restore
   h.hp = h.maxHp;
 
-  if(h.maxMp != null){
-    h.maxMp += 4;
-    h.mp = h.maxMp;
-  }
-
-  if(h.maxStamina != null){
-    h.maxStamina += 4;
-    h.stamina = h.maxStamina;
-  }
 
 h.attackBase = h.attack;
 h.defBase = h.def;
@@ -3907,13 +3888,6 @@ h.critRateBase = h.critRate;
 h.critMultBase = h.critMult;
 h.maxHpBase = h.maxHp;
 
-if(h.maxMp != null){
-  h.maxMpBase = h.maxMp;
-}
-
-if(h.maxStamina != null){
-  h.maxStaminaBase = h.maxStamina;
-}
 
   log(`⬆️ ${h.name} reached Level ${h.level}`);
 
@@ -3937,8 +3911,6 @@ hero.critRate = hero.critRateBase || hero.critRate;
 hero.critMult = hero.critMultBase || hero.critMult;
 
 hero.maxHp = hero.maxHpBase || hero.maxHp;
-hero.maxMp = hero.maxMpBase || hero.maxMp;
-hero.maxStamina = hero.maxStaminaBase || hero.maxStamina;
 
 let bonus = {
   attack:0,
@@ -3946,8 +3918,6 @@ let bonus = {
   magic:0,
   resist:0,
   hp:0,
-  mp:0,
-  stamina:0,
   speed:0,
   critRate:0,
   critMult:0
@@ -3984,8 +3954,6 @@ hero.critMult += bonus.critMult;
 
 // clamp
 hero.hp = Math.min(hero.hp, hero.maxHp);
-if(hero.mp != null) hero.mp = Math.min(hero.mp, hero.maxMp);
-if(hero.stamina != null) hero.stamina = Math.min(hero.stamina, hero.maxStamina);
 }
 
 /* ---------- CLASS EVOLUTION ---------- */
@@ -4004,9 +3972,9 @@ h.def += 5;
 h.resist += 3;
 
 h.abilities.push(
-{name:"Cleave",type:"physical",power:24,stamina:14,cooldownMax:3,cooldown:0,scale:"attack",target:"allEnemies"},
+{name:"Cleave",type:"physical",power:24,cooldownMax:3,cooldown:0,scale:"attack",target:"allEnemies"},
 
-{name:"Iron Wall",type:"support",power:0,stamina:12,cooldownMax:4,cooldown:0,scale:"attack",target:"self",apply:"defend"}
+{name:"Iron Wall",type:"support",power:0,cooldownMax:4,cooldown:0,scale:"attack",target:"self",apply:"defend"}
 );
 
 log(`🌟 Knight evolved into ${h.name}!`);
@@ -4042,9 +4010,9 @@ h.resist += 7;
 h.magic += 5;
 
 h.abilities.push(
-{name:"Kingbreaker",type:"physical",power:62,stamina:28,cooldownMax:5,cooldown:0,scale:"attack",target:"enemy"},
+{name:"Kingbreaker",type:"physical",power:62,cooldownMax:5,cooldown:0,scale:"attack",target:"enemy"},
 
-{name:"Guardian Aura",type:"support",power:26,stamina:24,cooldownMax:6,cooldown:0,scale:"attack",target:"allAllies"}
+{name:"Guardian Aura",type:"support",power:26,cooldownMax:6,cooldown:0,scale:"attack",target:"allAllies"}
 );
 
 log(`🌟 Paladin evolved into ${h.name}!`);
@@ -4117,9 +4085,9 @@ h._tier2 = true;
 h.name = "Assassin";
 
 h.abilities.push(
-{name:"Shadow Step",type:"physical",power:28,stamina:12,cooldownMax:3,cooldown:0,scale:"attack",target:"enemy"},
+{name:"Shadow Step",type:"physical",power:28,cooldownMax:3,cooldown:0,scale:"attack",target:"enemy"},
 
-{name:"Garrote",type:"physical",power:20,stamina:10,cooldownMax:4,cooldown:0,scale:"attack",apply:"poison",target:"enemy"}
+{name:"Garrote",type:"physical",power:20,cooldownMax:4,cooldown:0,scale:"attack",apply:"poison",target:"enemy"}
 );
 
 log(`🌟 Rogue evolved into ${h.name}!`);
@@ -4130,9 +4098,9 @@ h._tier3 = true;
 h.name = "Shadowblade";
 
 h.abilities.push(
-{name:"Nightmare Strike",type:"physical",power:34,stamina:18,cooldownMax:4,cooldown:0,scale:"attack",target:"enemy",apply:"stun"},
+{name:"Nightmare Strike",type:"physical",power:34,cooldownMax:4,cooldown:0,scale:"attack",target:"enemy",apply:"stun"},
 
-{name:"Smoke Veil",type:"support",power:0,stamina:12,cooldownMax:5,cooldown:0,scale:"attack",apply:"stun",target:"allEnemies"}
+{name:"Smoke Veil",type:"support",power:0,cooldownMax:5,cooldown:0,scale:"attack",apply:"stun",target:"allEnemies"}
 );
 
 log(`🌟 Assassin evolved into ${h.name}!`);
@@ -4143,9 +4111,9 @@ h._tier4 = true;
 h.name = "Nightstalker";
 
 h.abilities.push(
-{name:"Deathmark",type:"physical",power:54,stamina:26,cooldownMax:5,cooldown:0,scale:"attack",target:"enemy"},
+{name:"Deathmark",type:"physical",power:54,cooldownMax:5,cooldown:0,scale:"attack",target:"enemy"},
 
-{name:"Vanish",type:"support",power:0,stamina:16,cooldownMax:5,cooldown:0,scale:"attack",target:"self"}
+{name:"Vanish",type:"support",power:0,cooldownMax:5,cooldown:0,scale:"attack",target:"self"}
 );
 
 log(`🌟 Shadowblade evolved into ${h.name}!`);
