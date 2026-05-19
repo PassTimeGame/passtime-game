@@ -762,7 +762,10 @@ let knightTutorialSkillsUsed = {};
 
 let storyText = `
 <p>You rush to stop assassins from killing the King.</p>
-Blood stains the halls as countless others lie dead.
+
+Blood stains the halls as defenders fall around you.
+
+<p>The castle is under attack.</p>
 `;
 
 let displayedStoryText = "";
@@ -1759,11 +1762,11 @@ const enemyTypes = {
 
 assassin: {
   name: "Assassin",
-  hp: 40,
-  atk: 2,
+  hp: 28,
+  atk: 4,
   def: 3,
   resist: 3,
-  speed: 10,
+  speed: 12,
   abilities: [
     { name:"Shadow Cut", type:"physical", power:2, scale:"attack", target:"enemy" },
     { name:"Poison Blade", type:"physical", power:1, scale:"attack", apply:"poison", target:"enemy", cooldownMax:2 }
@@ -1773,24 +1776,27 @@ assassin: {
 assassin_boss: {
   name: "Royal Assassin",
   bossId: "royal_assassin",
-  hp: 150,
-  atk: 8,
-  def: 7,
-  resist: 6,
-  speed: 13,
+  hp: 190,
+  atk: 11,
+  def: 8,
+  resist: 7,
+  speed: 15,
+  critRate: 0.12,
+  critMult: 1.7,
   abilities: [
-    { name:"Execution Combo", power:8, scale:"attack", target:"enemy" },
-    { name:"Silence Field", power:4, scale:"attack", target:"allEnemies", apply:"stun", cooldownMax:3 }
+    { name:"Execution Combo", type:"physical", power:13, scale:"attack", target:"enemy" },
+    { name:"Silence Field", type:"physical", power:3, scale:"attack", target:"allEnemies", apply:"stun", cooldownMax:4 },
+    { name:"Call Reinforcements", type:"support", power:0, scale:"attack", target:"self", cooldownMax:5 }
   ]
 },
 
 guard: {
-  name: "Royal Guard",
-  hp: 45,
-  atk: 4,
-  def: 4,
+  name: "Dungeon Guard",
+  hp: 65,
+  atk: 5,
+  def: 8,
   resist: 4,
-  speed: 5,
+  speed: 4,
   abilities: [
     { name:"Spear Thrust", power:4, scale:"attack", target:"enemy" },
     { name:"Shield Wall", power:0, scale:"attack", target:"self", apply:"defend", cooldownMax:3 }
@@ -1800,14 +1806,15 @@ guard: {
 dungeon_warden: {
   name: "Dungeon Warden",
   bossId: "dungeon_warden",
-  hp: 250,
-  atk: 10,
-  def: 8,
-  resist: 8,
-  speed: 7,
+  hp: 330,
+  atk: 13,
+  def: 12,
+  resist: 10,
+  speed: 6,
   abilities: [
-    { name:"Chain Smash", power:15, scale:"attack", target:"enemy" },
-    { name:"Lockdown", power:0, scale:"attack", target:"allEnemies", apply:"stun", cooldownMax:4 }
+    { name:"Chain Smash", type:"physical", power:20, scale:"attack", target:"enemy" },
+    { name:"Lockdown", type:"support", power:0, scale:"attack", target:"allEnemies", apply:"stun", cooldownMax:5 },
+    { name:"Dungeon Alarm", type:"support", power:0, scale:"attack", target:"self", cooldownMax:5 }
   ]
 },
 
@@ -1853,7 +1860,7 @@ dungeon_warden: {
 
   orc: {
     name: "Orc Raider",
-    hp: 110,
+    hp: 95,
     atk: 14,
     def: 7,
     resist: 3,
@@ -1877,28 +1884,31 @@ goblin_king_guard: {
   ]
 },
 
-  goblin_king: {
-    name: "Goblin King",
-    bossId: "goblin_king",
-    hp: 360,
-    atk: 20,
-    def: 9,
-    resist: 8,
-    speed: 7,
-    abilities: [
-      { name:"Royal Slash", type:"physical", power:25, scale:"attack", target:"enemy" },
-      { name:"Call Minions", type:"support", power:0, scale:"attack", target:"self", cooldownMax:4 },
-      { name:"Frenzy Roar", type:"support", power:0, scale:"attack", target:"allEnemies", apply:"burn", cooldownMax:3 }
-    ]
-  },
+goblin_king: {
+  name: "Goblin King",
+  bossId: "goblin_king",
+  hp: 470,
+  atk: 24,
+  def: 12,
+  resist: 10,
+  speed: 8,
+  critRate: 0.08,
+  critMult: 1.6,
+  abilities: [
+    { name:"Royal Slash", type:"physical", power:30, scale:"attack", target:"enemy" },
+    { name:"Call Minions", type:"support", power:0, scale:"attack", target:"self", cooldownMax:5 },
+    { name:"Frenzy Roar", type:"support", power:0, scale:"attack", target:"allEnemies", apply:"burn", cooldownMax:4 },
+    { name:"Royal Guard Call", type:"support", power:0, scale:"attack", target:"self", cooldownMax:6 }
+  ]
+},
 
 forest_wolf: {
   name: "Forest Wolf",
-  hp: 70,
+  hp: 55,
   atk: 10,
   def: 3,
   resist: 2,
-  speed: 11,
+  speed: 15,
   abilities: [
     { name:"Bite", type:"physical", power:10, scale:"attack", target:"enemy" },
     { name:"Howl", type:"support", power:0, scale:"attack", target:"self", apply:"defend", cooldownMax:3 }
@@ -1911,48 +1921,48 @@ ent: {
   atk: 13,
   def: 9,
   resist: 6,
-  speed: 3,
+  speed: 2,
   abilities: [
     { name:"Branch Slam", type:"physical", power:16, scale:"attack", target:"enemy" },
-    { name:"Root Bind", type:"support", power:0, scale:"attack", target:"enemy", apply:"stun", cooldownMax:3 }
+    { name:"Root Bind", type:"support", power:0, scale:"attack", target:"enemy", apply:"stun", cooldownMax:4 }
   ]
 },
 
 spore_mage: {
   name: "Spore Druid",
-  hp: 85,
+  hp: 70,
   atk: 8,
   def: 4,
   resist: 12,
   speed: 7,
   abilities: [
-    { name:"Spore Burst", type:"magic", power:12, scale:"magic", apply:"poison", target:"enemy" },
-    { name:"Regrowth", type:"support", power:10, scale:"magic", target:"self", apply:"regen", cooldownMax:3 }
+    { name:"Spore Burst", type:"magic", power:10, scale:"magic", apply:"poison", target:"enemy" },
+    { name:"Regrowth", type:"support", power:18, scale:"magic", target:"self", apply:"regen", cooldownMax:3 }
   ]
 },
 
 evil_mage: {
   name: "Corrupted Mage",
   bossId: "corrupted_mage",
-  hp: 240,
-  atk: 20,
-  def: 6,
-  resist: 18,
-  speed: 10,
+  hp: 330,
+  atk: 18,
+  def: 7,
+  resist: 22,
+  speed: 11,
   abilities: [
     { name:"Void Bolt", power:22, scale:"magic", target:"enemy", apply:"burn" },
-    { name:"Dark Surge", power:30, scale:"magic", target:"allEnemies", cooldownMax:4 }
+    { name:"Dark Surge", power:30, scale:"magic", target:"allEnemies", cooldownMax:5 }
   ]
 },
 
 colossal_wolf: {
   name: "Colossal Wolf",
   bossId: "colossal_wolf",
-  hp: 300,
-  atk: 24,
-  def: 10,
-  resist: 6,
-  speed: 13,
+  hp: 420,
+  atk: 28,
+  def: 12,
+  resist: 8,
+  speed: 15,
   abilities: [
     { name:"Devour", type:"physical", power:28, scale:"attack", target:"enemy" },
     { name:"Alpha Roar", type:"support", power:0, scale:"attack", target:"allEnemies", apply:"stun", cooldownMax:4 }
@@ -2012,11 +2022,11 @@ warlord: {
 
 wisp: {
   name: "Arcane Wisp",
-  hp: 65,
+  hp: 50,
   atk: 12,
   def: 3,
   resist: 10,
-  speed: 15,
+  speed: 18,
   abilities: [
     { name:"Arcane Zap", power:14, scale:"magic", target:"enemy" }
   ]
@@ -2024,19 +2034,19 @@ wisp: {
 
 mage_apprentice: {
   name: "Mage Apprentice",
-  hp: 80,
+  hp: 60,
   atk: 10,
   def: 5,
   resist: 9,
   speed: 9,
   abilities: [
-    { name:"Fire Bolt", power:14, scale:"magic", target:"enemy", apply:"burn" }
+    { name:"Fire Bolt", power:16, scale:"magic", target:"enemy", apply:"burn" }
   ]
 },
 
 arcane_guardian: {
   name: "Arcane Guardian",
-  hp: 190,
+  hp: 230,
   atk: 18,
   def: 13,
   resist: 15,
@@ -2108,11 +2118,12 @@ let list = [];
 /* ================= KINGDOM ASSASSINS (1–5) ================= */
 if(w <= 5){
 
-  let pool = ["assassin"];
-  let count = 2 + Math.floor(w/2);
+  if(w < 5){
+    let count = 2 + Math.floor(w/2);
 
-  for(let i=0;i<count;i++){
-    list.push(createEnemy(pool[0], w));
+    for(let i=0;i<count;i++){
+      list.push(createEnemy("assassin", w));
+    }
   }
 
   if(w === 5){
@@ -2123,14 +2134,16 @@ if(w <= 5){
 /* ================= DUNGEON ESCAPE (6–10) ================= */
 else if(w <= 10){
 
-  let pool = ["guard"];
-  let count = 2 + Math.floor(w/2);
+  if(w < 10){
+    let count = 2 + Math.floor(w/2);
 
-  for(let i=0;i<count;i++){
-    list.push(createEnemy("guard", w));
+    for(let i=0;i<count;i++){
+      list.push(createEnemy("guard", w));
+    }
   }
 
   if(w === 10){
+    list.push(createEnemy("guard", w));
     list.push(createEnemy("dungeon_warden", w, true));
   }
 }
@@ -2138,11 +2151,13 @@ else if(w <= 10){
 /* ================= GOBLIN CAVES (11–15) ================= */
 else if(w <= 15){
 
-  let pool = ["goblin","hobgoblin","elite_goblin","orc"];
-  let count = 3 + Math.floor((w-10)/2);
+  if(w < 15){
+    let pool = ["goblin","hobgoblin","elite_goblin","orc"];
+    let count = 3 + Math.floor((w-10)/2);
 
-  for(let i=0;i<count;i++){
-    list.push(createEnemy(pool[Math.floor(Math.random()*pool.length)], w));
+    for(let i=0;i<count;i++){
+      list.push(createEnemy(pool[Math.floor(Math.random()*pool.length)], w));
+    }
   }
 
   if(w === 15){
@@ -2153,12 +2168,16 @@ else if(w <= 15){
 /* ================= CORRUPTED FOREST (16–20) ================= */
 else if(w <= 20){
 
+if(w < 20){
+
   let pool = ["forest_wolf","ent","spore_mage"];
   let count = 3 + Math.floor((w-15)/2);
 
   for(let i=0;i<count;i++){
     list.push(createEnemy(pool[Math.floor(Math.random()*pool.length)], w));
   }
+
+}
 
   if(w === 20){
     list.push(createEnemy("colossal_wolf", w, true));
@@ -2282,7 +2301,7 @@ const items = [
 
 { id:"entwood_carapace", name:"Entwood Carapace", slot:"armor", rarity:"rare", waveMin:16, waveMax:20, stats:{ def:14, resist:6 } },
 
-{ id:"spore_core_fragment", name:"Spore Core Fragment", slot:"accessory", rarity:"rare", waveMin:16, waveMax:20, stats:{ resist:5, hp:18, critRate:0.05 } },,
+{ id:"spore_core_fragment", name:"Spore Core Fragment", slot:"accessory", rarity:"rare", waveMin:16, waveMax:20, stats:{ resist:5, hp:18, critRate:0.05 } },
 
 { id:"beast_claw_blade", name:"Beast Claw Blade", slot:"weapon", rarity:"rare", waveMin:16, waveMax:20, stats:{ attack:15, critRate:0.12 } },
 
@@ -2538,6 +2557,7 @@ function applyDevStart(){
 
 }
 
+
 /* ================= INIT ================= */
 
 function initGame(){
@@ -2701,7 +2721,10 @@ if(wave === 1 && !storyEventsTriggered[1]){
 
   storyText = `
 <p>You rush to stop assassins from killing the King.</p>
-Blood stains the halls as countless others lie dead.
+
+Blood stains the halls as defenders fall around you.
+
+<p>The castle is under attack.</p>
   `;
 
 typeStory(storyText);
@@ -2713,11 +2736,13 @@ if(wave === 3 && !storyEventsTriggered[3]){
 
   storyText = `
 The castle halls grow quieter.<br>
-Too quiet.
+The first assassins have fallen.
 
-<p>The assassins are adapting.</p>
-They now move through the shadows with purpose.<br>
-They are hunting you specifically.
+<p>But the battle is far from over.</p>
+
+<p>More enemy forces are pouring into the lower halls.</p>
+
+The King's guard struggles to hold the line.
   `;
 
   typeStory(storyText);
@@ -2727,26 +2752,28 @@ if(wave === 5 && !storyEventsTriggered[5]){
   storyEventsTriggered[5] = true;
 
   storyText = `
-You arrive in the throne room and face the final Assassins.<br>
-The Assassin leader holds the king by the throat.<br>
-Steel begins to clash in the silence.
+<p>You arrive in the throne room and face the final Assassins.</p>
 
-<p>Palace Guards rush in to aid your final stand.</p>
+<p>The Assassin leader holds the king by the throat.</p>
+
+<p>Steel begins to clash in the silence.</p>
+
+Palace Guards rush in to aid your final stand.
   `;
 
 typeStory(storyText);
 
   recruit({
-    name:"Palace Guard",
     _class:"PalaceGuard",
-    level:4,xp:0,
-    hp:90,maxHp:90,
-    attack:12,def:10,magic:3,resist:6,
-    speed:7,
-    critRate:0.12,critMult:1.5,
+    name:"Palace Guard",
+    level:2,xp:0,
+    hp:45,maxHp:45,
+    attack:5,def:4,magic:1,resist:3,
+    speed:5,
+    critRate:0.03,critMult:1.3,
     status:{},
     abilities:[
-      {name:"Spear Strike",type:"physical",power:14,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
+      {name:"Spear Strike",type:"physical",power:5,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
       {name:"Shield Wall",type:"support",power:0,cooldownMax:3,cooldown:0,scale:"attack",target:"self"}
     ]
   });
@@ -2851,7 +2878,7 @@ if(wave === 11 && !storyEventsTriggered[11]){
 The Dungeon Warden falls.<br>
 You escape into caves beneath the kingdom.<br>
 
-<p>Goblins swarm the darkness.</p?
+<p>Goblins swarm in the darkness.</p>
   `;
 
 typeStory(storyText);
@@ -3217,9 +3244,14 @@ function renderSkillGroup(title, list){
 
     let cost = h.stamina!=null ? (a.stamina||0) : (a.cost||0);
 
-    let costOk = h.stamina!=null
-      ? h.stamina >= cost
-      : h.mp >= cost;
+  let costOk = true;
+
+if(h.stamina != null){
+  costOk = h.stamina >= cost;
+}
+else if(h.mp != null){
+  costOk = h.mp >= cost;
+}
 
     b.disabled = !(costOk && a.cooldown<=0);
 
@@ -3596,7 +3628,7 @@ if(t.hp <= 0){
   t.hp = 0;
   t.dead = true;
 
-  let xpAmount = 12 + Math.floor(t.level * 3);
+  let xpAmount = 8 + Math.floor(t.level * 2);
   grantPartyXP(h, xpAmount);
 
   render();
@@ -3654,26 +3686,34 @@ function summonEnemy(type, w){
   if(enemies.length >= maxEnemiesThisWave) return false;
 
   let summoned = createEnemy(type, w);
-  enemies.push(summoned);
+
+  // Insert summoned enemies above the first boss card
+  let bossIndex = enemies.findIndex(e => e && e.bossId);
+
+  if(bossIndex !== -1){
+    enemies.splice(bossIndex, 0, summoned);
+  } else {
+    enemies.push(summoned);
+  }
 
   log(`🧟 ${summoned.name} joins the battle!`);
 
   let init = getInitiative(summoned, wave);
 
-let newTurn = {
-  type:"enemy",
-  i: enemies.indexOf(summoned),
-  entity: summoned,
-  init
-};
+  let newTurn = {
+    type:"enemy",
+    i: enemies.indexOf(summoned),
+    entity: summoned,
+    init
+  };
 
-let alreadyActed = turnQueue.slice(0, turnIndex);
-let upcoming = turnQueue.slice(turnIndex);
+  let alreadyActed = turnQueue.slice(0, turnIndex);
+  let upcoming = turnQueue.slice(turnIndex);
 
-upcoming.push(newTurn);
-upcoming.sort((a,b)=>b.init-a.init);
+  upcoming.push(newTurn);
+  upcoming.sort((a,b)=>b.init-a.init);
 
-turnQueue = alreadyActed.concat(upcoming);
+  turnQueue = alreadyActed.concat(upcoming);
 
   renderTurnBar();
   render();
@@ -3704,12 +3744,6 @@ if(
 
   log(`🔥 ${e.name} enters Phase 2!`);
 
-  if(e.bossId === "goblin_king"){
-    log(`👑 ${e.name} calls his royal guards!`);
-
-    summonEnemy("goblin_king_guard", wave);
-    summonEnemy("goblin_king_guard", wave);
-  }
 }
 
   let targets = alive(heroes);
@@ -3727,9 +3761,40 @@ e.intent = skill.name;
 
   setCooldown(e, skill);
 
-if(e.bossId === "goblin_king" && skill.name === "Call Minions"){
-  let summonPool = ["goblin", "hobgoblin", "elite_goblin"];
+/* ================= BOSS SUMMON ABILITIES ================= */
 
+if(e.bossId === "royal_assassin" && skill.name === "Call Reinforcements"){
+
+  let summoned = 0;
+
+  if(summonEnemy("assassin", wave)) summoned++;
+  if(summonEnemy("assassin", wave)) summoned++;
+
+  if(summoned > 0){
+    log(`🗡️ ${e.name} calls assassins from the shadows!`);
+  } else {
+    log(`🗡️ ${e.name} tries to call reinforcements, but the battlefield is full!`);
+  }
+
+  render();
+  return;
+}
+
+if(e.bossId === "dungeon_warden" && skill.name === "Dungeon Alarm"){
+
+  if(summonEnemy("guard", wave)){
+    log(`🚨 ${e.name} sounds the prison alarm!`);
+  } else {
+    log(`🚨 ${e.name} sounds the alarm, but no more guards can enter!`);
+  }
+
+  render();
+  return;
+}
+
+if(e.bossId === "goblin_king" && skill.name === "Call Minions"){
+
+  let summonPool = ["goblin", "hobgoblin", "elite_goblin"];
   let type = summonPool[Math.floor(Math.random() * summonPool.length)];
 
   if(summonEnemy(type, wave)){
@@ -3740,6 +3805,25 @@ if(e.bossId === "goblin_king" && skill.name === "Call Minions"){
 
   render();
   return;
+}
+
+if(e.bossId === "goblin_king" && skill.name === "Royal Guard Call"){
+
+  if(e.hp <= e.maxHp * 0.45){
+
+    if(summonEnemy("goblin_king_guard", wave)){
+      log(`⚔️ ${e.name}'s royal guard enters battle!`);
+    } else {
+      log(`⚔️ ${e.name} calls his guard, but the battlefield is full!`);
+    }
+
+    render();
+    return;
+  }
+
+  // If he is above 45% HP, do not waste the turn.
+  skill = e.abilities[0];
+  e.intent = skill.name;
 }
 
   let weighted = [];
@@ -4071,10 +4155,13 @@ function grantPartyXP(killer, amount){
 
   heroes.forEach(h => {
     if(h.hp <= 0) return;
-    gainXP(h, Math.floor(amount * 0.60));
-  });
 
-  gainXP(killer, amount);
+    if(h === killer){
+      gainXP(h, amount);
+    } else {
+      gainXP(h, Math.floor(amount * 0.40));
+    }
+  });
 }
 
 /* ---------- LEVEL UP ---------- */
