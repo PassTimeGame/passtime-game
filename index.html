@@ -137,6 +137,26 @@ button:active {
 
 button:disabled{opacity:0.4;}
 
+@keyframes tutorialSkillFlash{
+  0%{
+    box-shadow:0 0 4px gold;
+    filter:brightness(1);
+  }
+  50%{
+    box-shadow:0 0 16px gold;
+    filter:brightness(1.55);
+  }
+  100%{
+    box-shadow:0 0 4px gold;
+    filter:brightness(1);
+  }
+}
+
+.tutorialFlash{
+  animation:tutorialSkillFlash 0.8s infinite;
+  border:2px solid gold !important;
+}
+
 .xpBar{
 width:100%;
 height:8px;
@@ -648,6 +668,21 @@ html, body{
   filter:grayscale(100%);
 }
 
+.hotbarBtn.skillAttack{
+  background:#8b1e1e;
+  box-shadow:0 3px 0 #4a0f0f;
+}
+
+.hotbarBtn.skillMagic{
+  background:#6a2dbd;
+  box-shadow:0 3px 0 #34145e;
+}
+
+.hotbarBtn.skillSupport{
+  background:#228b22;
+  box-shadow:0 3px 0 #145214;
+}
+
 .hotbarCost{
   display:block;
   margin-top:3px;
@@ -722,6 +757,8 @@ let turnQueue = [];
 let turnIndex = 0;
 
 let activeTurn = null;
+
+let knightTutorialSkillsUsed = {};
 
 let storyText = `
 <p>You rush to stop assassins from killing the King.</p>
@@ -1296,9 +1333,42 @@ if(type === "defend"){
   t.status.defend = {
     duration: 1,
     reduction: 0.65,
+    counter: false
+  };
+  return;
+}
+
+if(type === "counter"){
+  t.status.defend = {
+    duration: 1,
+    reduction: 0.50,
     counter: true
   };
   return;
+}
+
+if(type === "stun" && t.bossId){
+
+  if(Math.random() < 0.70){
+    log(`👑 ${t.name} resists the stun!`);
+    return;
+  }
+
+if(type === "stun" && t.bossId && Math.random() < 0.70){
+  log(`👑 ${t.name} resists the stun!`);
+  return;
+}
+
+if(type === "poison" && t.bossId && Math.random() < 0.35){
+  log(`👑 ${t.name} resists the poison!`);
+  return;
+}
+
+if(type === "burn" && t.bossId && Math.random() < 0.25){
+  log(`👑 ${t.name} resists the burn!`);
+  return;
+}
+
 }
 
   // normal statuses
@@ -1443,12 +1513,39 @@ function renderHotbar(){
 
   bar.innerHTML = "";
 
-  hero.abilities.forEach((ability, ai) => {
+  let sortedHotbarAbilities = hero.abilities
+  .map((ability, ai) => ({ability, ai}))
+  .sort((x, y) => {
+    const order = { physical: 1, magic: 2, support: 3 };
+    return (order[x.ability.type] || 99) - (order[y.ability.type] || 99);
+  });
+
+sortedHotbarAbilities.forEach(({ability, ai}) => {
+
     let btn = document.createElement("button");
 
 let locked = ability.cooldown > 0;
 
-    btn.className = `hotbarBtn ${locked ? "locked" : ""}`;
+    let shouldFlashTutorial =
+  wave <= 2 &&
+  hero._class === "Knight" &&
+  !knightTutorialSkillsUsed[ability.name];
+
+let typeClass = "";
+
+if(ability.type === "physical"){
+  typeClass = "skillAttack";
+}
+
+if(ability.type === "magic"){
+  typeClass = "skillMagic";
+}
+
+if(ability.type === "support"){
+  typeClass = "skillSupport";
+}
+
+btn.className = `hotbarBtn ${typeClass} ${locked ? "locked" : ""} ${shouldFlashTutorial ? "tutorialFlash" : ""}`;
 
     btn.innerHTML = `
       ${ability.name}
@@ -1457,9 +1554,11 @@ let locked = ability.cooldown > 0;
 
     let holdTimer = null;
     let didPreview = false;
+    let touchUsed = false;
 
     btn.addEventListener("touchstart", () => {
-      didPreview = false;
+    didPreview = false;
+    touchUsed = true;
 
       holdTimer = setTimeout(() => {
         didPreview = true;
@@ -1482,6 +1581,9 @@ let locked = ability.cooldown > 0;
     });
 
     btn.addEventListener("click", () => {
+
+if(touchUsed) return;
+
       if(locked){
         showAbilityPreview(hero, ability);
         return;
@@ -1489,6 +1591,11 @@ let locked = ability.cooldown > 0;
 
       heroAction(currentHeroIndex, ai);
       setTimeout(resetStoryPanel, 100);
+
+setTimeout(() => {
+  touchUsed = false;
+}, 350);
+
     });
 
     bar.appendChild(btn);
@@ -1604,6 +1711,22 @@ function triggerPassive(hero, trigger){
     }
 
   });
+}
+
+function replaceAbility(hero, oldName, newAbility){
+  let index = hero.abilities.findIndex(a => a.name === oldName);
+
+  if(index !== -1){
+    hero.abilities[index] = newAbility;
+  } else {
+    hero.abilities.push(newAbility);
+  }
+}
+
+function addAbility(hero, ability){
+  if(!hero.abilities.some(a => a.name === ability.name)){
+    hero.abilities.push(ability);
+  }
 }
 
 let heroes = [
@@ -3036,7 +3159,7 @@ el("heroPanel").innerHTML=
   </div>
 </div>
 
-<div class="heroUiLine">
+<div class="heroUiLine" style="margin-top:2px;">
   XP ${h.xp || 0}/${xpToNext(h.level)}
 </div>
 
@@ -3105,6 +3228,14 @@ function renderSkillGroup(title, list){
     if(a.cooldown > 0){
       b.innerText = `${a.name} (${a.cooldown})`;
     }
+
+if(
+  wave <= 2 &&
+  h._class === "Knight" &&
+  !knightTutorialSkillsUsed[a.name]
+){
+  b.classList.add("tutorialFlash");
+}
 
     b.onmouseenter=(e)=>{
 
@@ -3259,6 +3390,10 @@ if(!h || h.hp <= 0 || h.dead){
 
 let a=h.abilities[ai];
 
+if(wave <= 2 && h._class === "Knight"){
+  knightTutorialSkillsUsed[a.name] = true;
+}
+
 let knightAnim = null;
 let knightAnimDuration = 450;
 
@@ -3296,6 +3431,29 @@ waitForAnimationThenNextTurn();
 return;
 }
 
+if(a.type === "support" && (a.apply === "defend" || a.apply === "counter")){
+
+  let targets = getTargets(h, a);
+
+  targets.forEach(t => {
+    applyStatus(t, "defend");
+  });
+
+  setCooldown(h, a);
+
+  log(`${h.name} uses ${a.name}!`);
+
+  render();
+
+  if(knightAnim){
+    setKnightAnimation(knightAnim, knightAnimDuration);
+  }
+
+  activeTurn = null;
+  waitForAnimationThenNextTurn();
+  return;
+}
+
 if(a.name === "Guardian Aura"){
 
   alive(heroes).forEach(t=>{
@@ -3324,6 +3482,21 @@ if(a.name === "Vanish"){
   setCooldown(h, a);
   log(`${h.name} vanishes into the shadows!`);
   render();
+  activeTurn = null;
+  waitForAnimationThenNextTurn();
+  return;
+}
+
+if(a.name === "Smoke Dodge"){
+
+  applyStatus(h, "defend");
+
+  setCooldown(h, a);
+
+  log(`${h.name} disappears into smoke and prepares to dodge!`);
+
+  render();
+
   activeTurn = null;
   waitForAnimationThenNextTurn();
   return;
@@ -3485,19 +3658,25 @@ function summonEnemy(type, w){
 
   log(`🧟 ${summoned.name} joins the battle!`);
 
-let init = getInitiative(summoned, wave);
+  let init = getInitiative(summoned, wave);
 
-turnQueue.push({
+let newTurn = {
   type:"enemy",
   i: enemies.indexOf(summoned),
   entity: summoned,
   init
-});
+};
 
-turnQueue.sort((a,b)=>b.init-a.init);
+let alreadyActed = turnQueue.slice(0, turnIndex);
+let upcoming = turnQueue.slice(turnIndex);
 
-renderTurnBar();
-render();
+upcoming.push(newTurn);
+upcoming.sort((a,b)=>b.init-a.init);
+
+turnQueue = alreadyActed.concat(upcoming);
+
+  renderTurnBar();
+  render();
 
   return true;
 }
@@ -3997,224 +4176,388 @@ function handleClassEvolution(h){
 // ================= KNIGHT PATH =================
 if(h._class === "Knight"){
 
-if(h.level >= 5 && !h._tier2){
-h._tier2 = true;
-h.name = "Vanguard";
+  if(h.level >= 5 && !h._tier2){
+    h._tier2 = true;
+    h.name = "Vanguard";
 
-h.maxHp += 30;
-h.attack += 4;
-h.def += 5;
-h.resist += 3;
+    h.maxHp += 30;
+    h.attack += 4;
+    h.def += 5;
+    h.resist += 3;
 
-h.abilities.push(
-{name:"Cleave",type:"physical",power:24,cooldownMax:3,cooldown:0,scale:"attack",target:"allEnemies"},
+    replaceAbility(h, "Quick Slash", {
+      name:"Blade Rush",
+      type:"physical",
+      power:16,
+      cooldownMax:0,
+      cooldown:0,
+      scale:"attack",
+      target:"enemy"
+    });
 
-{name:"Iron Wall",type:"support",power:0,cooldownMax:4,cooldown:0,scale:"attack",target:"self",apply:"defend"}
-);
+    replaceAbility(h, "Defend", {
+      name:"Iron Wall",
+      type:"support",
+      power:0,
+      cooldownMax:2,
+      cooldown:0,
+      scale:"attack",
+      target:"self",
+      apply:"defend"
+    });
 
-log(`🌟 Knight evolved into ${h.name}!`);
-}
+    addAbility(h, {
+      name:"Counter Stance",
+      type:"support",
+      power:0,
+      cooldownMax:4,
+      cooldown:0,
+      scale:"attack",
+      target:"self",
+      apply:"counter"
+    });
 
-if(h.level >= 10 && !h._tier3){
-h._tier3 = true;
-h.name = "Paladin";
+    log(`🌟 Knight evolved into ${h.name}!`);
+  }
 
-h.maxHp += 40;
-h.attack += 5;
-h.def += 6;
-h.resist += 6;
-h.magic += 4;
+  if(h.level >= 10 && !h._tier3){
+    h._tier3 = true;
+    h.name = "Paladin";
 
-h.abilities.push(
-{name:"Holy Strike",type:"magic",power:38,cost:16,cooldownMax:3,cooldown:0,scale:"magic",target:"enemy"},
+    h.maxHp += 40;
+    h.attack += 5;
+    h.def += 6;
+    h.resist += 6;
+    h.magic += 4;
 
-{name:"Divine Guard",type:"support",power:18,cost:18,cooldownMax:5,cooldown:0,scale:"magic",apply:"regen",target:"allAllies"}
-);
+    replaceAbility(h, "Guard Break", {
+      name:"Holy Strike",
+      type:"magic",
+      power:38,
+      cost:16,
+      cooldownMax:3,
+      cooldown:0,
+      scale:"magic",
+      target:"enemy"
+    });
 
-log(`🌟 Vanguard evolved into ${h.name}!`);
-}
+    addAbility(h, {
+      name:"Divine Guard",
+      type:"support",
+      power:18,
+      cost:18,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"magic",
+      apply:"regen",
+      target:"allAllies"
+    });
 
-if(h.level >= 15 && !h._tier4){
-h._tier4 = true;
-h.name = "Royal Champion";
+    log(`🌟 Vanguard evolved into ${h.name}!`);
+  }
 
-h.maxHp += 55;
-h.attack += 8;
-h.def += 8;
-h.resist += 7;
-h.magic += 5;
+  if(h.level >= 15 && !h._tier4){
+    h._tier4 = true;
+    h.name = "Royal Champion";
 
-h.abilities.push(
-{name:"Kingbreaker",type:"physical",power:62,cooldownMax:5,cooldown:0,scale:"attack",target:"enemy"},
+    h.maxHp += 55;
+    h.attack += 8;
+    h.def += 8;
+    h.resist += 7;
+    h.magic += 5;
 
-{name:"Guardian Aura",type:"support",power:26,cooldownMax:6,cooldown:0,scale:"attack",target:"allAllies"}
-);
+    replaceAbility(h, "Blade Rush", {
+      name:"Kingbreaker",
+      type:"physical",
+      power:62,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"attack",
+      target:"enemy"
+    });
 
-log(`🌟 Paladin evolved into ${h.name}!`);
-}
-}
+    addAbility(h, {
+      name:"Guardian Aura",
+      type:"support",
+      power:26,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"attack",
+      target:"allAllies"
+    });
 
-// ================= MAGE PATH =================
-if(h._class === "Mage"){
-
-if(h.level >= 8 && !h._tier2){
-h._tier2 = true;
-h.name = "Warlock";
-
-h.maxHp += 25;
-h.def += 3;
-h.resist += 5;
-h.magic += 8;
-
-h.abilities.push(
-{name:"Void Bolt",type:"magic",power:38,cost:16,cooldownMax:3,cooldown:0,scale:"magic",apply:"burn",target:"enemy"},
-
-{name:"Arcane Barrier",type:"support",power:0,cost:14,cooldownMax:5,cooldown:0,scale:"magic",target:"self"}
-);
-
-log(`🌟 Mage evolved into ${h.name}!`);
-}
-
-if(h.level >= 12 && !h._tier3){
-h._tier3 = true;
-h.name = "Archmage";
-
-h.maxHp += 35;
-h.def += 4;
-h.resist += 6;
-h.magic += 10;
-
-h.abilities.push(
-{name:"Meteor",type:"magic",power:64,cost:26,cooldownMax:5,cooldown:0,scale:"magic",target:"allEnemies"},
-
-{name:"Time Warp",type:"support",power:20,cost:18,cooldownMax:5,cooldown:0,scale:"magic",apply:"regen",target:"allAllies"}
-);
-
-log(`🌟 Warlock evolved into ${h.name}!`);
-}
-
-if(h.level >= 16 && !h._tier4){
-h._tier4 = true;
-h.name = "Void Sage";
-
-h.maxHp += 45;
-h.def += 5;
-h.resist += 8;
-h.magic += 14;
-
-h.abilities.push(
-{name:"Void Storm",type:"magic",power:74,cost:34,cooldownMax:6,cooldown:0,scale:"magic",target:"allEnemies",apply:"burn"},
-
-{name:"Reality Break",type:"magic",power:88,cost:38,cooldownMax:6,cooldown:0,scale:"magic",target:"enemy",apply:"stun"}
-);
-
-log(`🌟 Archmage evolved into ${h.name}!`);
-}
+    log(`🌟 Paladin evolved into ${h.name}!`);
+  }
 }
 
 // ================= ROGUE PATH =================
 if(h._class === "Rogue"){
 
-if(h.level >= 5 && !h._tier2){
-h._tier2 = true;
-h.name = "Assassin";
+  if(h.level >= 5 && !h._tier2){
+    h._tier2 = true;
+    h.name = "Shadow Rogue";
 
-h.abilities.push(
-{name:"Shadow Step",type:"physical",power:28,cooldownMax:3,cooldown:0,scale:"attack",target:"enemy"},
+    h.maxHp += 20;
+    h.attack += 5;
+    h.speed += 3;
 
-{name:"Garrote",type:"physical",power:20,cooldownMax:4,cooldown:0,scale:"attack",apply:"poison",target:"enemy"}
-);
+    replaceAbility(h, "Quick Strike", {
+      name:"Shadow Flurry",
+      type:"physical",
+      power:16,
+      stamina:6,
+      cooldownMax:0,
+      cooldown:0,
+      scale:"attack",
+      target:"enemy"
+    });
 
-log(`🌟 Rogue evolved into ${h.name}!`);
-}
+    replaceAbility(h, "Backstab", {
+      name:"Venom Cut",
+      type:"physical",
+      power:28,
+      stamina:12,
+      cooldownMax:2,
+      cooldown:0,
+      scale:"attack",
+      target:"enemy",
+      apply:"poison"
+    });
 
-if(h.level >= 10 && !h._tier3){
-h._tier3 = true;
-h.name = "Shadowblade";
+    addAbility(h, {
+      name:"Shadow Step",
+      type:"support",
+      power:0,
+      stamina:10,
+      cooldownMax:3,
+      cooldown:0,
+      scale:"attack",
+      target:"self",
+      apply:"defend"
+    });
 
-h.abilities.push(
-{name:"Nightmare Strike",type:"physical",power:34,cooldownMax:4,cooldown:0,scale:"attack",target:"enemy",apply:"stun"},
-
-{name:"Smoke Veil",type:"support",power:0,cooldownMax:5,cooldown:0,scale:"attack",apply:"stun",target:"allEnemies"}
-);
-
-log(`🌟 Assassin evolved into ${h.name}!`);
-}
-
-if(h.level >= 15 && !h._tier4){
-h._tier4 = true;
-h.name = "Nightstalker";
-
-h.abilities.push(
-{name:"Deathmark",type:"physical",power:54,cooldownMax:5,cooldown:0,scale:"attack",target:"enemy"},
-
-{name:"Vanish",type:"support",power:0,cooldownMax:5,cooldown:0,scale:"attack",target:"self"}
-);
-
-log(`🌟 Shadowblade evolved into ${h.name}!`);
-}
+    log(`🌟 Rogue evolved into ${h.name}!`);
+  }
 }
 
 // ================= CLERIC PATH =================
 if(h._class === "Cleric"){
 
-if(h.level >= 5 && !h._tier2){
-h._tier2 = true;
-h.name = "Priest";
+  if(h.level >= 5 && !h._tier2){
+    h._tier2 = true;
+    h.name = "Priest";
 
-h.maxHp += 20;
-h.def += 3;
-h.resist += 4;
-h.magic += 3;
+    h.maxHp += 20;
+    h.def += 3;
+    h.resist += 4;
+    h.magic += 3;
 
-h.abilities.push(
-{name:"Mass Heal",type:"support",power:34,cost:16,cooldownMax:4,cooldown:0,scale:"magic",target:"allAllies"},
+    replaceAbility(h, "Heal", {
+      name:"Mass Heal",
+      type:"support",
+      power:34,
+      cost:16,
+      cooldownMax:4,
+      cooldown:0,
+      scale:"magic",
+      target:"allAllies"
+    });
 
-{name:"Holy Smite",type:"magic",power:28,cost:14,cooldownMax:3,cooldown:0,scale:"magic",target:"enemy"}
-);
+    replaceAbility(h, "Holy Light", {
+      name:"Holy Smite",
+      type:"magic",
+      power:28,
+      cost:14,
+      cooldownMax:3,
+      cooldown:0,
+      scale:"magic",
+      target:"enemy"
+    });
 
-log(`🌟 Cleric evolved into ${h.name}!`);
+    log(`🌟 Cleric evolved into ${h.name}!`);
+  }
+
+  if(h.level >= 10 && !h._tier3){
+    h._tier3 = true;
+    h.name = "Saint";
+
+    h.maxHp += 30;
+    h.def += 4;
+    h.resist += 5;
+    h.magic += 5;
+
+    addAbility(h, {
+      name:"Sanctuary",
+      type:"support",
+      power:24,
+      cost:20,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"magic",
+      target:"allAllies"
+    });
+
+    replaceAbility(h, "Holy Smite", {
+      name:"Divine Light",
+      type:"magic",
+      power:42,
+      cost:22,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"magic",
+      target:"allEnemies"
+    });
+
+    log(`🌟 Priest evolved into ${h.name}!`);
+  }
+
+  if(h.level >= 15 && !h._tier4){
+    h._tier4 = true;
+    h.name = "Angel";
+
+    h.maxHp += 40;
+    h.def += 5;
+    h.resist += 6;
+    h.magic += 7;
+
+    replaceAbility(h, "Mass Heal", {
+      name:"Miracle",
+      type:"support",
+      power:70,
+      cost:28,
+      cooldownMax:6,
+      cooldown:0,
+      scale:"magic",
+      target:"allAllies"
+    });
+
+    addAbility(h, {
+      name:"Judgment",
+      type:"magic",
+      power:58,
+      cost:28,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"magic",
+      target:"enemy",
+      apply:"stun"
+    });
+
+    log(`🌟 Saint evolved into ${h.name}!`);
+  }
 }
 
-if(h.level >= 10 && !h._tier3){
-h._tier3 = true;
-h.name = "Saint";
+// ================= MAGE PATH =================
+if(h._class === "Mage"){
 
-h.maxHp += 30;
-h.def += 4;
-h.resist += 5;
-h.magic += 5;
+  if(h.level >= 8 && !h._tier2){
+    h._tier2 = true;
+    h.name = "Warlock";
 
-h.abilities.push(
-{name:"Sanctuary",type:"support",power:24,cost:20,cooldownMax:5,cooldown:0,scale:"magic",target:"allAllies"},
+    h.maxHp += 25;
+    h.def += 3;
+    h.resist += 5;
+    h.magic += 8;
 
-{name:"Divine Light",type:"magic",power:42,cost:22,cooldownMax:5,cooldown:0,scale:"magic",target:"allEnemies"}
-);
+    replaceAbility(h, "Firebolt", {
+      name:"Void Bolt",
+      type:"magic",
+      power:38,
+      cost:16,
+      cooldownMax:3,
+      cooldown:0,
+      scale:"magic",
+      apply:"burn",
+      target:"enemy"
+    });
 
-log(`🌟 Priest evolved into ${h.name}!`);
+    addAbility(h, {
+      name:"Arcane Barrier",
+      type:"support",
+      power:0,
+      cost:14,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"magic",
+      target:"self"
+    });
+
+    log(`🌟 Mage evolved into ${h.name}!`);
+  }
+
+  if(h.level >= 12 && !h._tier3){
+    h._tier3 = true;
+    h.name = "Archmage";
+
+    h.maxHp += 35;
+    h.def += 4;
+    h.resist += 6;
+    h.magic += 10;
+
+    replaceAbility(h, "Explosion", {
+      name:"Meteor",
+      type:"magic",
+      power:64,
+      cost:26,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"magic",
+      target:"allEnemies"
+    });
+
+    addAbility(h, {
+      name:"Arcane Renewal",
+      type:"support",
+      power:20,
+      cost:18,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"magic",
+      apply:"regen",
+      target:"allAllies"
+    });
+
+    log(`🌟 Warlock evolved into ${h.name}!`);
+  }
+
+  if(h.level >= 16 && !h._tier4){
+    h._tier4 = true;
+    h.name = "Void Sage";
+
+    h.maxHp += 45;
+    h.def += 5;
+    h.resist += 8;
+    h.magic += 14;
+
+    replaceAbility(h, "Void Bolt", {
+      name:"Void Storm",
+      type:"magic",
+      power:74,
+      cost:34,
+      cooldownMax:6,
+      cooldown:0,
+      scale:"magic",
+      target:"allEnemies",
+      apply:"burn"
+    });
+
+    addAbility(h, {
+      name:"Reality Break",
+      type:"magic",
+      power:88,
+      cost:38,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"magic",
+      target:"enemy",
+      apply:"stun"
+    });
+
+    log(`🌟 Archmage evolved into ${h.name}!`);
+  }
 }
 
-if(h.level >= 15 && !h._tier4){
-h._tier4 = true;
-h.name = "Angel";
-
-h.maxHp += 40;
-h.def += 5;
-h.resist += 6;
-h.magic += 7;
-
-h.abilities.push(
-{name:"Miracle",type:"support",power:70,cost:28,cooldownMax:7,cooldown:0,scale:"magic",target:"allAllies"},
-
-{name:"Judgment",type:"magic",power:58,cost:28,cooldownMax:6,cooldown:0,scale:"magic",target:"enemy",apply:"stun"}
-);
-
-log(`🌟 Saint evolved into ${h.name}!`);
 }
-}
-
-
-   }
 
 /* ---------- XP HOOK ---------- */
 
