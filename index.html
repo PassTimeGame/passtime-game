@@ -186,6 +186,28 @@ box-shadow:0 0 12px yellow;
     box-shadow 0.15s ease;
 }
 
+.card.damageShake{
+  animation:damageShake 0.28s ease;
+}
+
+.card.attackBump{
+  animation:attackBump 0.22s ease;
+}
+
+@keyframes damageShake{
+  0%{ transform:translateX(0); }
+  25%{ transform:translateX(-4px); }
+  50%{ transform:translateX(4px); }
+  75%{ transform:translateX(-3px); }
+  100%{ transform:translateX(0); }
+}
+
+@keyframes attackBump{
+  0%{ transform:scale(1); }
+  50%{ transform:scale(1.05) translateY(-3px); }
+  100%{ transform:scale(1); }
+}
+
 .selected {
   border: 3px solid gold !important;
   transform: scale(1.00);
@@ -321,20 +343,27 @@ box-shadow:0 0 12px yellow;
 
 .summonedEnemy{
   animation:summonPop 1.05s cubic-bezier(0.16, 1, 0.3, 1) 1;
-  box-shadow:0 0 18px crimson;
   transform-origin:center;
 }
 
 .heroSpawn{
   animation:summonPop 1.05s cubic-bezier(0.16, 1, 0.3, 1) 1;
-  box-shadow:0 0 18px deepskyblue;
   transform-origin:center;
 }
 
 .bossSpawn{
   animation:bossSpawnPop 1.25s cubic-bezier(0.16, 1, 0.3, 1) 1;
-  box-shadow:0 0 26px gold, 0 0 18px crimson;
   transform-origin:center;
+}
+
+.bossSpawn b{
+  animation:bossTextFlash 1.25s ease 1;
+}
+
+@keyframes bossTextFlash{
+  0%{ color:gold; }
+  70%{ color:gold; }
+  100%{ color:white; }
 }
 
 @keyframes bossSpawnPop{
@@ -850,6 +879,15 @@ let activeTurn = null;
 
 let knightTutorialSkillsUsed = {};
 
+let unitAnimIdCounter = 1;
+
+function assignUnitAnimId(unit){
+  if(unit && !unit.animId){
+    unit.animId = unitAnimIdCounter++;
+  }
+  return unit;
+}
+
 let storyText = `
 <p>You rush to stop assassins from killing the King.</p>
 
@@ -872,9 +910,9 @@ function showFloatText(entity, text, type="damage"){
 
   let cards = document.querySelectorAll(".card");
 
-  let card = [...cards].find(c =>
-    c.dataset.name === entity.name
-  );
+let card = [...cards].find(c =>
+  c.dataset.animId === String(entity.animId)
+);
 
   if(!card) return;
 
@@ -895,6 +933,31 @@ function showFloatText(entity, text, type="damage"){
   document.body.appendChild(div);
 
   setTimeout(()=>div.remove(), 800);
+}
+
+function playCardAnimation(entity, className){
+
+  if(!entity) return;
+
+  setTimeout(() => {
+
+    let cards = document.querySelectorAll(".card");
+
+let card = [...cards].find(c =>
+  c.dataset.animId === String(entity.animId)
+);
+
+    if(!card) return;
+
+    card.classList.remove(className);
+    void card.offsetWidth;
+    card.classList.add(className);
+
+    setTimeout(() => {
+      card.classList.remove(className);
+    }, 320);
+
+  }, 0);
 }
 
 function getInitiative(entity, wave) {
@@ -981,6 +1044,14 @@ function waitForAnimationThenNextTurn(){
   }
 
   nextTurn();
+}
+
+function endTurnAfterDelay(delay = 750){
+  activeTurn = null;
+
+  setTimeout(() => {
+    waitForAnimationThenNextTurn();
+  }, delay);
 }
 
 function getRarity(item){
@@ -1126,6 +1197,9 @@ function equipBackpackItem(index){
     log(`🎒 ${item.name} removed from Backpack.`);
   }
 
+  render();
+}
+
 function equipBackpackItemToHero(itemIndex, heroIndex){
   let item = backpack[itemIndex];
   let hero = heroes[heroIndex];
@@ -1156,8 +1230,6 @@ function equipBackpackItemToHero(itemIndex, heroIndex){
   showHero(heroIndex);
 }
 
-  render();
-}
 
 // LOG SPEED //
 let logQueue = [];
@@ -1871,6 +1943,8 @@ if(desc){
 
 function recruit(unit, side = "hero"){
 
+assignUnitAnimId(unit);
+
   if(side === "enemy"){
     unit.justSummoned = true;
     enemies.push(unit);
@@ -1914,6 +1988,7 @@ function addAbility(hero, ability){
 
 let heroes = [
 {
+  animId: unitAnimIdCounter++,
   name:"Knight",
   _class:"Knight",
   level:1,xp:0,
@@ -1987,7 +2062,7 @@ dungeon_warden: {
   name: "Dungeon Warden",
   bossId: "dungeon_warden",
   hp: 400,
-  atk: 15,
+  atk: 13,
   def: 14,
   resist: 12,
   speed: 6,
@@ -2290,6 +2365,7 @@ if (wave <= 3) {
 }
 
 return {
+  animId: unitAnimIdCounter++,
   name: base.name,
   type:type,
   icon:getEnemyIcon(type),
@@ -2822,6 +2898,8 @@ if (!DEV_MODE && h._class === "Knight" && !h._tutorialBuffApplied) {
 });
 
 render();
+showHero(0);
+resetStoryPanel();
 typeStory(storyText);
 rollInitiative(false);
 
@@ -2840,9 +2918,20 @@ if(wave <= 3){
 
 renderTurnBar();
 
+let firstHeroTurn = turnQueue.find(q =>
+  q.type === "hero" && q.entity && q.entity.hp > 0 && !q.entity.dead
+);
+
+if(firstHeroTurn){
+  activeTurn = firstHeroTurn;
+  currentHeroIndex = heroes.indexOf(firstHeroTurn.entity);
+  showHero(currentHeroIndex);
+  renderHotbar();
+}
+
 setTimeout(() => {
   nextTurn();
-}, 1400);
+}, 2500);
 
 el("log").addEventListener("click", () => {
   skipAllLogs = true;
@@ -2902,9 +2991,8 @@ turnQueue.sort((a,b)=>b.init-a.init);
 
 if(announceWave){
   log(`🔥 ENTERING WAVE ${wave}`);
+  nextTurn();
 }
-
-nextTurn();
 }
 
 /* ================= TURN LOOP ================= */
@@ -3322,9 +3410,28 @@ heroes.forEach(h=>{
 enemies=createEnemies(wave);
 markSpawnAnimations(enemies);
 waveHandled = false;
-rollInitiative(true);
+
 render();
-},800);
+rollInitiative(false);
+renderTurnBar();
+
+let firstHeroTurn = turnQueue.find(q =>
+  q.type === "hero" && q.entity && q.entity.hp > 0 && !q.entity.dead
+);
+
+if(firstHeroTurn){
+  activeTurn = firstHeroTurn;
+  currentHeroIndex = heroes.indexOf(firstHeroTurn.entity);
+  showHero(currentHeroIndex);
+  renderHotbar();
+}
+
+setTimeout(() => {
+  nextTurn();
+}, 1800);
+
+
+},300);
 
 return;
 }
@@ -3337,7 +3444,9 @@ return;
 pruneTurnQueue();
 
 if(turnIndex >= turnQueue.length){
-  rollInitiative();
+  rollInitiative(false);
+  renderTurnBar();
+  nextTurn();
   return;
 }
 
@@ -3374,7 +3483,7 @@ renderTurnBar();
 
 setTimeout(() => {
   nextTurn();
-}, 700);
+}, 600);
 
 selectedAlly = null;
 }
@@ -3672,7 +3781,7 @@ if(wave <= 2 && h._class === "Knight"){
 }
 
 let knightAnim = null;
-let knightAnimDuration = 450;
+let knightAnimDuration = 550;
 
 if(h._class === "Knight"){
   if(a.apply === "defend"){
@@ -3703,8 +3812,7 @@ if(knightAnim){
   setKnightAnimation(knightAnim, knightAnimDuration);
 }
 
-activeTurn = null;
-waitForAnimationThenNextTurn();
+endTurnAfterDelay(850);
 return;
 }
 
@@ -3731,9 +3839,8 @@ if(a.aggroTurns){
     setKnightAnimation(knightAnim, knightAnimDuration);
   }
 
-  activeTurn = null;
-  waitForAnimationThenNextTurn();
-  return;
+endTurnAfterDelay(700);
+return;
 }
 
 if(a.name === "Guardian Aura"){
@@ -3759,9 +3866,8 @@ if(knightAnim){
   setKnightAnimation(knightAnim, knightAnimDuration);
 }
 
-activeTurn = null;
-waitForAnimationThenNextTurn();
-  return;
+endTurnAfterDelay(700);
+return;
 }
 
 if(a.name === "Vanish"){
@@ -3786,9 +3892,8 @@ if(a.name === "Smoke Dodge"){
 
   render();
 
-  activeTurn = null;
-  waitForAnimationThenNextTurn();
-  return;
+endTurnAfterDelay(700);
+return;
 }
 
 if(a.name === "Sanctuary"){
@@ -3816,9 +3921,9 @@ alive(heroes).forEach(t=>{
   setCooldown(h, a);
   log(`${h.name} casts Sanctuary! Poison, burn, and stun are cleansed.`);
   render();
-  activeTurn = null;
-  waitForAnimationThenNextTurn();
-  return;
+
+endTurnAfterDelay(700);
+return;
 }
 
 if(a.name === "Arcane Barrier"){
@@ -3856,8 +3961,10 @@ if(a.name === "Chain Lightning"){
     let chainSkill = {...a, power:Math.floor(a.power * multiplier)};
     let dmg = computeDamage(h, t, chainSkill);
 
-    t.hp = Math.max(0, t.hp - dmg);
-    showFloatText(t, `-${dmg}`, "damage");
+playCardAnimation(h, "attackBump");
+t.hp = Math.max(0, t.hp - dmg);
+showFloatText(t, `-${dmg}`, "damage");
+playCardAnimation(t, "damageShake");
 
     log(`${h.name}'s Chain Lightning hits ${t.name} for ${dmg}`);
 
@@ -3875,11 +3982,12 @@ if(a.name === "Chain Lightning"){
 
   setTimeout(() => {
     cleanupDeadEnemies();
-  }, 500);
+  }, 900);
 
-  activeTurn = null;
-  waitForAnimationThenNextTurn();
-  return;
+activeTurn = null;
+
+endTurnAfterDelay(700);
+return;
 }
 
 
@@ -3908,9 +4016,11 @@ if(actualHeal > 0){
 
   } else {
 
- let dmg = computeDamage(h, t, a);
- t.hp = Math.max(0, t.hp - dmg);
- showFloatText(t, `-${dmg}`, "damage");
+let dmg = computeDamage(h, t, a);
+playCardAnimation(h, "attackBump");
+t.hp = Math.max(0, t.hp - dmg);
+showFloatText(t, `-${dmg}`, "damage");
+playCardAnimation(t, "damageShake");
 
 if(t.status?.defend?.counter && dmg > 0){
 
@@ -3946,13 +4056,13 @@ if(t.hp <= 0){
 
   setTimeout(() => {
     cleanupDeadEnemies();
-  }, 500);
+  }, 900);
 
   if(enemies.length === 0){
-    activeTurn = null;
-    waitForAnimationThenNextTurn();
-    return;
+endTurnAfterDelay(700);
+return;
   }
+
 }
 
 log(`${h.name} uses ${a.name} on ${t.name} for ${dmg}`);
@@ -3987,8 +4097,7 @@ if(knightAnim){
   setKnightAnimation(knightAnim, knightAnimDuration);
 }
 
-activeTurn = null;
-waitForAnimationThenNextTurn();
+endTurnAfterDelay(700);
 }
 
 function markSpawnAnimations(list){
@@ -4273,8 +4382,10 @@ if(target.arcaneBarrier && target.arcaneBarrier > 0){
   log(`${target.name}'s Arcane Barrier absorbs ${absorb} damage!`);
 }
 
+playCardAnimation(e, "attackBump");
 target.hp = Math.max(0, target.hp - dmg);
 showFloatText(target, `-${dmg}`, "damage");
+playCardAnimation(target, "damageShake");
 
 if(target.hp <= 0){
   target.hp = 0;
@@ -4322,8 +4433,10 @@ if(t.arcaneBarrier && t.arcaneBarrier > 0){
   log(`${t.name}'s Arcane Barrier absorbs ${absorb} damage!`);
 }
 
+playCardAnimation(e, "attackBump");
 t.hp = Math.max(0, t.hp - dmg);
 showFloatText(t, `-${dmg}`, "damage");
+playCardAnimation(t, "damageShake");
 
 if(t.hp <= 0){
   t.hp = 0;
@@ -4426,6 +4539,7 @@ ${h.hp <= 0 ? 'dead' : ''}
 ${h.justRecruited ? 'heroSpawn' : ''}"
 
 data-name="${h.name}"
+data-anim-id="${h.animId}"
 
 onclick="
 if(${h.hp <= 0 || h.dead}){
@@ -4503,6 +4617,7 @@ ${i===selectedEnemy ? 'selected' : ''}
 ${en.dead ? 'dead' : ''}
 ${en.justBossSpawn ? 'bossSpawn' : en.justSummoned ? 'summonedEnemy' : ''}"
 data-name="${en.name}"
+data-anim-id="${en.animId}"
 
 onclick="
 if(selectedEnemy === ${i}){
@@ -4570,12 +4685,14 @@ enemies.forEach(en => {
 
     en.summonAnimationQueued = true;
 
-setTimeout(() => {
-  en.justSummoned = false;
-  en.justBossSpawn = false;
-  en.summonAnimationQueued = false;
-  render();
-}, 1350);
+    let delay = en.justBossSpawn ? 2600 : 1350;
+
+    setTimeout(() => {
+      en.justSummoned = false;
+      en.justBossSpawn = false;
+      en.summonAnimationQueued = false;
+      render();
+    }, delay);
   }
 });
 
@@ -4715,8 +4832,15 @@ hero.magic += bonus.magic;
 hero.resist += bonus.resist;
 
 hero.maxHp += bonus.hp;
-hero.maxMp += bonus.mp;
-hero.maxStamina += bonus.stamina;
+
+if(hero.maxMp != null){
+  hero.maxMp += bonus.mp || 0;
+}
+
+if(hero.maxStamina != null){
+  hero.maxStamina += bonus.stamina || 0;
+}
+
 hero.speed += bonus.speed;
 hero.critRate += bonus.critRate;
 hero.critMult += bonus.critMult;
