@@ -319,6 +319,84 @@ box-shadow:0 0 12px yellow;
 }
 
 
+.summonedEnemy{
+  animation:summonPop 1.05s cubic-bezier(0.16, 1, 0.3, 1) 1;
+  box-shadow:0 0 18px crimson;
+  transform-origin:center;
+}
+
+.bossSpawn{
+  animation:bossSpawnPop 1.25s cubic-bezier(0.16, 1, 0.3, 1) 1;
+  box-shadow:0 0 26px gold, 0 0 18px crimson;
+  transform-origin:center;
+}
+
+@keyframes bossSpawnPop{
+  0%{
+    opacity:0;
+    transform:scale(0.72) translateY(-16px);
+    filter:brightness(2.5) blur(3px);
+  }
+  45%{
+    opacity:1;
+    transform:scale(1.12) translateY(0);
+    filter:brightness(1.8) blur(0px);
+  }
+  75%{
+    transform:scale(0.97);
+    filter:brightness(1.25);
+  }
+  100%{
+    opacity:1;
+    transform:scale(1);
+    filter:brightness(1);
+  }
+}
+
+@keyframes summonPop{
+  0%{
+    opacity:0;
+    transform:scale(0.82) translateY(-8px);
+    filter:brightness(2) blur(2px);
+  }
+
+  45%{
+    opacity:1;
+    transform:scale(1.04) translateY(0);
+    filter:brightness(1.45) blur(0px);
+  }
+
+  70%{
+    transform:scale(0.99);
+    filter:brightness(1.15);
+  }
+
+  100%{
+    opacity:1;
+    transform:scale(1);
+    filter:brightness(1);
+  }
+}
+
+.floatText{
+  position:absolute;
+  font-weight:bold;
+  font-size:18px;
+  pointer-events:none;
+  animation:floatUp 0.8s ease-out forwards;
+  z-index:999;
+  text-shadow:2px 2px 2px black;
+}
+
+.floatDamage{ color:red; }
+.floatHeal{ color:limegreen; }
+.floatCrit{ color:gold; }
+
+@keyframes floatUp{
+  0%{ opacity:1; transform:translateY(0); }
+  100%{ opacity:0; transform:translateY(-35px); }
+}
+
 /* ================= TOOLTIP ================= */
 #tooltip{
 position:fixed;
@@ -668,6 +746,12 @@ html, body{
   filter:grayscale(100%);
 }
 
+#combatHotbar.inactive{
+  opacity:0.72;
+  filter:brightness(0.8);
+  transition:opacity 0.15s ease, filter 0.15s ease;
+}
+
 .hotbarBtn.skillAttack{
   background:#8b1e1e;
   box-shadow:0 3px 0 #4a0f0f;
@@ -777,6 +861,35 @@ let storyTypeId = 0;
 
 function el(id){return document.getElementById(id);}
 function d20(){return Math.floor(Math.random()*20)+1;}
+
+function showFloatText(entity, text, type="damage"){
+
+  let cards = document.querySelectorAll(".card");
+
+  let card = [...cards].find(c =>
+    c.dataset.name === entity.name
+  );
+
+  if(!card) return;
+
+  let rect = card.getBoundingClientRect();
+
+  let div = document.createElement("div");
+
+  div.className = `floatText ${
+    type === "heal" ? "floatHeal" :
+    type === "crit" ? "floatCrit" :
+    "floatDamage"
+  }`;
+
+  div.innerText = text;
+  div.style.left = rect.left + rect.width / 2 + "px";
+  div.style.top = rect.top + 10 + "px";
+
+  document.body.appendChild(div);
+
+  setTimeout(()=>div.remove(), 800);
+}
 
 function getInitiative(entity, wave) {
   let init = d20() + entity.speed;
@@ -965,7 +1078,7 @@ if(backpack.length === 0){
 
     b.onclick = () => {
 let heroButtons = alive(heroes)
-  .filter(hero => hero._class !== "PalaceGuard")
+  .filter(hero => hero._class !== "RoyalGuard")
   .map((hero, heroIndex) => {
     let realIndex = heroes.indexOf(hero);
     return `<button onclick="equipBackpackItemToHero(${index}, ${realIndex})">
@@ -1013,7 +1126,7 @@ function equipBackpackItemToHero(itemIndex, heroIndex){
 
   if(!item || !hero || hero.hp <= 0) return;
 
-  if(hero._class === "PalaceGuard") return;
+  if(hero._class === "RoyalGuard") return;
 
   if(!hero.equipment){
     hero.equipment = {weapon:null, armor:null, accessory:null};
@@ -1155,8 +1268,27 @@ function getCost(entity, ability){
   let base = ability.cost ?? ability.stamina ?? 0;
   return Math.floor(base + entity.level * 0.6);
 }
+
 function alive(list){
 return list.filter(x => x && x.hp > 0 && !x.dead);
+}
+
+function fullHealHeroes(){
+  heroes.forEach(h => {
+    if(h && !h.dead){
+      h.hp = h.maxHp;
+
+      if(h.maxStamina != null){
+        h.stamina = h.maxStamina;
+      }
+
+      if(h.maxMp != null){
+        h.mp = h.maxMp;
+      }
+    }
+  });
+
+  log(`✨ The party recovers after the boss battle!`);
 }
 
 function pruneTurnQueue(){
@@ -1238,6 +1370,10 @@ function computeDamage(attacker, target, skill){
   let atk = skill.scale === "magic" ? a.magic : a.attack;
   let def = skill.scale === "magic" ? t.resist : t.def;
 
+if(skill.defensePierce){
+  def *= (1 - skill.defensePierce);
+}
+
   // 1. BASE SKILL DAMAGE (main driver)
   let base = skill.power + atk * 0.7;
 
@@ -1271,6 +1407,10 @@ function tickTurn(entity){
 
   tickCooldowns(entity);
 
+if(entity.aggro && entity.aggro > 0){
+  entity.aggro--;
+}
+
 function tickCooldowns(entity){
   if(!entity.abilities) return;
 
@@ -1287,19 +1427,35 @@ function tickCooldowns(entity){
 
 /* ================= STATUS ================= */
 
+function statusIcons(entity){
+  if(!entity.status) return "";
+
+  let icons = [];
+
+  if(entity.status.poison) icons.push("☠️");
+  if(entity.status.burn) icons.push("🔥");
+  if(entity.status.regen) icons.push("✨");
+  if(entity.status.stun) icons.push("💫");
+  if(entity.status.defend) icons.push("🛡️");
+
+  return icons.length
+    ? `<span style="font-size:13px; margin-left:4px;">${icons.join("")}</span>`
+    : "";
+}
+
 const statusEffects = {
 
 poison:{
   name:"Poison",
   tick(target){
-    target.hp = Math.max(0, target.hp - Math.max(2, Math.floor(target.maxHp * 0.03)));
+    target.hp = Math.max(0, target.hp - Math.max(2, Math.floor(target.maxHp * 0.025)));
   }
 },
 
 burn:{
   name:"Burn",
   tick(target){
-    target.hp = Math.max(0, target.hp - Math.max(2, Math.floor(target.maxHp * 0.04)));
+    target.hp = Math.max(0, target.hp - Math.max(2, Math.floor(target.maxHp * 0.035)));
   }
 },
 
@@ -1350,13 +1506,6 @@ if(type === "counter"){
   return;
 }
 
-if(type === "stun" && t.bossId){
-
-  if(Math.random() < 0.70){
-    log(`👑 ${t.name} resists the stun!`);
-    return;
-  }
-
 if(type === "stun" && t.bossId && Math.random() < 0.70){
   log(`👑 ${t.name} resists the stun!`);
   return;
@@ -1370,8 +1519,6 @@ if(type === "poison" && t.bossId && Math.random() < 0.35){
 if(type === "burn" && t.bossId && Math.random() < 0.25){
   log(`👑 ${t.name} resists the burn!`);
   return;
-}
-
 }
 
   // normal statuses
@@ -1403,7 +1550,18 @@ function tickStatus(t){
 if (t.hp <= 0) continue;
 
 if(statusEffects[k]){
-  statusEffects[k].tick(t);
+  let beforeHp = t.hp;
+
+statusEffects[k].tick(t);
+
+let diff = t.hp - beforeHp;
+
+if(diff > 0){
+  showFloatText(t, `+${diff}`, "heal");
+}
+else if(diff < 0){
+  showFloatText(t, `${diff}`, "damage");
+}
 }
 
 if(t.hp <= 0){
@@ -1514,7 +1672,21 @@ function renderHotbar(){
     return;
   }
 
-  bar.innerHTML = "";
+bar.innerHTML = "";
+
+let currentTurnEntity =
+  activeTurn?.entity;
+
+let playerTurn =
+  currentTurnEntity &&
+  heroes.includes(currentTurnEntity);
+
+if(playerTurn){
+  bar.classList.remove("inactive");
+} else {
+  bar.classList.add("inactive");
+}
+
 
   let sortedHotbarAbilities = hero.abilities
   .map((ability, ai) => ({ability, ai}))
@@ -1694,8 +1866,10 @@ if(desc){
 function recruit(unit, side = "hero"){
 
   if(side === "enemy"){
+    unit.justSummoned = true;
     enemies.push(unit);
   } else {
+    unit.justRecruited = true;
     heroes.push(unit);
   }
 
@@ -1746,7 +1920,7 @@ let heroes = [
 abilities:[ 
 {name:"Quick Slash",type:"physical",power:8,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
   
-{name:"Guard Break",type:"physical",power:16,cooldownMax:2,cooldown:0,scale:"attack",target:"enemy"},
+{name:"Guard Break",type:"physical",power:22,cooldownMax:2,cooldown:0,scale:"attack",target:"enemy",defensePierce:0.45},
   
 {name:"Shield Bash",type:"physical",power:12,cooldownMax:4,cooldown:0,scale:"attack",apply:"stun",target:"enemy"},
 
@@ -1762,8 +1936,8 @@ const enemyTypes = {
 
 assassin: {
   name: "Assassin",
-  hp: 28,
-  atk: 4,
+  hp: 25,
+  atk: 3,
   def: 3,
   resist: 3,
   speed: 12,
@@ -1777,14 +1951,14 @@ assassin_boss: {
   name: "Royal Assassin",
   bossId: "royal_assassin",
   hp: 190,
-  atk: 11,
+  atk: 10,
   def: 8,
   resist: 7,
   speed: 15,
   critRate: 0.12,
   critMult: 1.7,
   abilities: [
-    { name:"Execution Combo", type:"physical", power:13, scale:"attack", target:"enemy" },
+    { name:"Execution Combo", type:"physical", power:12, scale:"attack", target:"enemy" },
     { name:"Silence Field", type:"physical", power:3, scale:"attack", target:"allEnemies", apply:"stun", cooldownMax:4 },
     { name:"Call Reinforcements", type:"support", power:0, scale:"attack", target:"self", cooldownMax:5 }
   ]
@@ -1806,10 +1980,10 @@ guard: {
 dungeon_warden: {
   name: "Dungeon Warden",
   bossId: "dungeon_warden",
-  hp: 330,
-  atk: 13,
-  def: 12,
-  resist: 10,
+  hp: 400,
+  atk: 15,
+  def: 14,
+  resist: 12,
   speed: 6,
   abilities: [
     { name:"Chain Smash", type:"physical", power:20, scale:"attack", target:"enemy" },
@@ -1896,9 +2070,9 @@ goblin_king: {
   critMult: 1.6,
   abilities: [
     { name:"Royal Slash", type:"physical", power:30, scale:"attack", target:"enemy" },
-    { name:"Call Minions", type:"support", power:0, scale:"attack", target:"self", cooldownMax:5 },
+    { name:"Call Minions", type:"support", power:0, scale:"attack", target:"self", cooldownMax:3 },
     { name:"Frenzy Roar", type:"support", power:0, scale:"attack", target:"allEnemies", apply:"burn", cooldownMax:4 },
-    { name:"Royal Guard Call", type:"support", power:0, scale:"attack", target:"self", cooldownMax:6 }
+    { name:"Royal Guard Call", type:"support", power:0, scale:"attack", target:"self", cooldownMax:3 }
   ]
 },
 
@@ -2071,11 +2245,36 @@ ancient_dragon: {
 },
 };
 
+function getEnemyIcon(type){
+  const icons = {
+    assassin:"🗡️",
+    assassin_boss:"👑",
+    guard:"🛡️",
+    dungeon_warden:"⛓️",
+    goblin:"👺",
+    hobgoblin:"👺",
+    elite_goblin:"👺",
+    orc:"🪓",
+    goblin_king:"👑",
+    forest_wolf:"🐺",
+    ent:"🌳",
+    spore_mage:"🍄",
+    evil_mage:"🔮",
+    colossal_wolf:"🐺",
+    wisp:"✨",
+    mage_apprentice:"🔥",
+    arcane_guardian:"🛡️",
+    ancient_dragon:"🐉"
+  };
+
+  return icons[type] || "❓";
+}
+
 function createEnemy(type, wave, isBoss=false){
 
 let base = enemyTypes[type];
 
-let earlyGame = wave <= 3 ? 0.7 : 1;
+let earlyGame = wave <= 3 ? 0.8 : 1;
 
 // Adjust Enemy Scale //
 let scale = 1 + wave * 0.035;
@@ -2086,7 +2285,10 @@ if (wave <= 3) {
 
 return {
   name: base.name,
+  type:type,
+  icon:getEnemyIcon(type),
   bossId: base.bossId,
+  isBoss: !!base.bossId,
   level: wave,
 
   hp: Math.floor(base.hp * scale * earlyGame),
@@ -2423,7 +2625,7 @@ function tryPartyEquipItem(item){
   let bestGain = 0;
 
 alive(heroes).forEach(hero => {
-  if(hero._class === "PalaceGuard") return;
+  if(hero._class === "RoyalGuard") return;
 
   if(!hero.equipment){
     hero.equipment = {weapon:null, armor:null, accessory:null};
@@ -2565,6 +2767,15 @@ function initGame(){
   applyDevStart();
 
   enemies = createEnemies(wave);
+markSpawnAnimations(enemies);
+
+if(!DEV_MODE){
+  heroes.forEach(h => {
+    if(h._class === "Knight"){
+      h.justRecruited = true;
+    }
+  });
+}
 
   heroes.forEach(h=>{
 
@@ -2606,7 +2817,26 @@ if (!DEV_MODE && h._class === "Knight" && !h._tutorialBuffApplied) {
 
 render();
 typeStory(storyText);
-rollInitiative(true);
+rollInitiative(false);
+
+if(wave <= 3){
+  let knightTurnIndex = turnQueue.findIndex(q =>
+    q.entity && q.entity._class === "Knight"
+  );
+
+  if(knightTurnIndex > 0){
+    let knightTurn = turnQueue.splice(knightTurnIndex, 1)[0];
+    turnQueue.unshift(knightTurn);
+  }
+
+  turnIndex = 0;
+}
+
+renderTurnBar();
+
+setTimeout(() => {
+  nextTurn();
+}, 1400);
 
 el("log").addEventListener("click", () => {
   skipAllLogs = true;
@@ -2695,6 +2925,11 @@ if(
 
   waveHandled = true;
   wave++;
+
+if([5,10,15,20,25].includes(wave - 1)){
+  fullHealHeroes();
+}
+
   log("🏆 Wave Cleared!");
 
 heroes = heroes.filter(h => h && h.hp > 0 && !h.dead);
@@ -2758,14 +2993,14 @@ if(wave === 5 && !storyEventsTriggered[5]){
 
 <p>Steel begins to clash in the silence.</p>
 
-Palace Guards rush in to aid your final stand.
+Royal Guards rush in to aid your final stand.
   `;
 
 typeStory(storyText);
 
   recruit({
-    _class:"PalaceGuard",
-    name:"Palace Guard",
+    _class:"RoyalGuard",
+    name:"Royal Guard",
     level:2,xp:0,
     hp:45,maxHp:45,
     attack:5,def:4,magic:1,resist:3,
@@ -2774,22 +3009,22 @@ typeStory(storyText);
     status:{},
     abilities:[
       {name:"Spear Strike",type:"physical",power:5,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
-      {name:"Shield Wall",type:"support",power:0,cooldownMax:3,cooldown:0,scale:"attack",target:"self"}
+      {name:"Shield Wall",type:"support",power:0,cooldownMax:3,cooldown:0,scale:"attack",target:"self",apply:"defend"}
     ]
   });
 
-recruit({
-    name:"Palace Guard",
-    _class:"PalaceGuard",
-    level:4,xp:0,
-    hp:90,maxHp:90,
-    attack:12,def:10,magic:3,resist:6,
-    speed:7,
-    critRate:0.12,critMult:1.5,
+  recruit({
+    _class:"RoyalGuard",
+    name:"Royal Guard",
+    level:2,xp:0,
+    hp:45,maxHp:45,
+    attack:5,def:4,magic:1,resist:3,
+    speed:5,
+    critRate:0.03,critMult:1.3,
     status:{},
     abilities:[
-      {name:"Spear Strike",type:"physical",power:14,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
-      {name:"Shield Wall",type:"support",power:0,cooldownMax:3,cooldown:0,scale:"attack",target:"self"}
+      {name:"Spear Strike",type:"physical",power:5,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
+      {name:"Shield Wall",type:"support",power:0,cooldownMax:3,cooldown:0,scale:"attack",target:"self",apply:"defend"}
     ]
   });
 }
@@ -2797,7 +3032,7 @@ recruit({
 if(wave === 6 && !storyEventsTriggered[6]){
   storyEventsTriggered[6] = true;
 
-heroes = heroes.filter(h => h._class !== "PalaceGuard");
+heroes = heroes.filter(h => h._class !== "RoyalGuard");
 
   storyText = `
 <p>When the mask finally falls, the truth is revealed:</p>
@@ -2924,7 +3159,7 @@ abilities:[
   
 {name:"Regen Blessing",type:"support",power:12,cost:14,cooldownMax:4,cooldown:0,scale:"magic",apply:"regen",target:"allAllies"},
   
-{name:"Prayer Guard",type:"support",power:0,cost:8,cooldownMax:3,cooldown:0,scale:"magic",apply:"defend",target:"self"}
+{name:"Prayer Guard",type:"support",power:0,cost:8,cooldownMax:2,cooldown:0,scale:"magic",apply:"defend",target:"self"}
 
 ]
   });
@@ -3044,12 +3279,42 @@ abilities:[
   });
 }
 
+if(wave === 23 && !storyEventsTriggered[23]){
+  storyEventsTriggered[23] = true;
+
+  storyText = `
+Ancient towers rise beyond the horizon.<br>
+The air crackles with unstable magic.
+
+<p>The Empire of Magic has not fallen.</p>
+It evolved into something far worse.
+  `;
+
+  typeStory(storyText);
+}
+
+if(wave === 25 && !storyEventsTriggered[25]){
+  storyEventsTriggered[25] = true;
+
+  storyText = `
+The Mage falls silent.<br>
+Even he seems afraid of what lies ahead.
+
+<p>The corruption no longer resembles life.</p>
+
+This is only the beginning.
+  `;
+
+  typeStory(storyText);
+}
+
 setTimeout(()=>{
 heroes.forEach(h=>{
   delete h._regenCasters;
 });
 
 enemies=createEnemies(wave);
+markSpawnAnimations(enemies);
 waveHandled = false;
 rollInitiative(true);
 render();
@@ -3108,34 +3373,6 @@ setTimeout(() => {
 selectedAlly = null;
 }
 
-if(wave === 23 && !storyEventsTriggered[23]){
-  storyEventsTriggered[23] = true;
-
-  storyText = `
-Ancient towers rise beyond the horizon.<br>
-The air crackles with unstable magic.
-
-<p>The Empire of Magic has not fallen.</p>
-It evolved into something far worse.
-  `;
-
-  typeStory(storyText);
-}
-
-if(wave === 25 && !storyEventsTriggered[25]){
-  storyEventsTriggered[25] = true;
-
-  storyText = `
-The Mage falls silent.<br>
-Even he seems afraid of what lies ahead.
-
-<p>The corruption no longer resembles life.</p>
-
-This is only the beginning.
-  `;
-
-  typeStory(storyText);
-}
 
 /* ================= HERO UI ================= */
 
@@ -3168,7 +3405,7 @@ el("heroPanel").innerHTML=
 </div>
 
 <div class="heroUiLine">
-  HP ${h.hp}/${h.maxHp}
+  HP ${h.hp}/${h.maxHp}${statusIcons(h)}
 </div>
 
 <div class="hpBar">
@@ -3386,7 +3623,9 @@ if(ability.target === "ally"){
   ){
     target = heroes[selectedAlly];
   } else {
-    target = validAllies[0];
+    target = validAllies
+      .slice()
+      .sort((a,b)=>(a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
   }
 
   return [target];
@@ -3468,7 +3707,12 @@ if(a.type === "support" && (a.apply === "defend" || a.apply === "counter")){
   let targets = getTargets(h, a);
 
   targets.forEach(t => {
-    applyStatus(t, "defend");
+    applyStatus(t, a.apply);
+
+if(a.aggroTurns){
+  t.aggro = a.aggroTurns;
+}
+
   });
 
   setCooldown(h, a);
@@ -3488,11 +3732,18 @@ if(a.type === "support" && (a.apply === "defend" || a.apply === "counter")){
 
 if(a.name === "Guardian Aura"){
 
-  alive(heroes).forEach(t=>{
-    let heal = a.power + Math.floor(h.def * 0.5);
-    t.hp = Math.min(t.maxHp, t.hp + heal);
-    applyStatus(t, "regen");
-  });
+alive(heroes).forEach(t=>{
+  let heal = a.power + Math.floor(h.def * 0.5);
+  let beforeHp = t.hp;
+  t.hp = Math.min(t.maxHp, t.hp + heal);
+  let actualHeal = t.hp - beforeHp;
+
+  if(actualHeal > 0){
+    showFloatText(t, `+${actualHeal}`, "heal");
+  }
+
+  applyStatus(t, "regen");
+});
 
   setCooldown(h, a);
   log(`${h.name} shields the party with Guardian Aura!`);
@@ -3537,18 +3788,24 @@ if(a.name === "Smoke Dodge"){
 if(a.name === "Sanctuary"){
 
 
-  alive(heroes).forEach(t=>{
-    let heal = a.power + Math.floor(h.magic * 0.5);
-    t.hp = Math.min(t.maxHp, t.hp + heal);
+alive(heroes).forEach(t=>{
+  let heal = a.power + Math.floor(h.magic * 0.5);
+  let beforeHp = t.hp;
+  t.hp = Math.min(t.maxHp, t.hp + heal);
+  let actualHeal = t.hp - beforeHp;
 
-    if(t.status){
-      delete t.status.poison;
-      delete t.status.burn;
-      delete t.status.stun;
-    }
+  if(actualHeal > 0){
+    showFloatText(t, `+${actualHeal}`, "heal");
+  }
 
-    applyStatus(t, "regen");
-  });
+  if(t.status){
+    delete t.status.poison;
+    delete t.status.burn;
+    delete t.status.stun;
+  }
+
+  applyStatus(t, "regen");
+});
 
   setCooldown(h, a);
   log(`${h.name} casts Sanctuary! Poison, burn, and stun are cleansed.`);
@@ -3573,6 +3830,52 @@ if(a.name === "Arcane Barrier"){
 
 if(a.cooldown>0) return;
 
+if(a.name === "Chain Lightning"){
+
+  let chainTargets = alive(enemies);
+  if(!chainTargets.length) return;
+
+  if(
+    selectedEnemy != null &&
+    enemies[selectedEnemy] &&
+    enemies[selectedEnemy].hp > 0
+  ){
+    let first = enemies[selectedEnemy];
+    chainTargets = [first, ...chainTargets.filter(e => e !== first)];
+  }
+
+  let multiplier = 1;
+
+  chainTargets.forEach(t => {
+    let chainSkill = {...a, power:Math.floor(a.power * multiplier)};
+    let dmg = computeDamage(h, t, chainSkill);
+
+    t.hp = Math.max(0, t.hp - dmg);
+    showFloatText(t, `-${dmg}`, "damage");
+
+    log(`${h.name}'s Chain Lightning hits ${t.name} for ${dmg}`);
+
+    if(t.hp <= 0){
+      t.hp = 0;
+      t.dead = true;
+      grantPartyXP(h, 8 + Math.floor(t.level * 2));
+    }
+
+    multiplier *= 0.72;
+  });
+
+  setCooldown(h, a);
+  render();
+
+  setTimeout(() => {
+    cleanupDeadEnemies();
+  }, 500);
+
+  activeTurn = null;
+  waitForAnimationThenNextTurn();
+  return;
+}
+
 
 let targets = getTargets(h, a);
 if(!targets.length) return;
@@ -3593,6 +3896,7 @@ let actualHeal = t.hp - beforeHp;
 /* HEALING XP */
 
 if(actualHeal > 0){
+  showFloatText(t, `+${actualHeal}`, "heal");
   gainHealingXP(h, actualHeal);
 }
 
@@ -3600,6 +3904,7 @@ if(actualHeal > 0){
 
  let dmg = computeDamage(h, t, a);
  t.hp = Math.max(0, t.hp - dmg);
+ showFloatText(t, `-${dmg}`, "damage");
 
 if(t.status?.defend?.counter && dmg > 0){
 
@@ -3680,12 +3985,24 @@ activeTurn = null;
 waitForAnimationThenNextTurn();
 }
 
+function markSpawnAnimations(list){
+  list.forEach(unit => {
+    unit.justSummoned = true;
+
+    if(unit.bossId || unit.isBoss){
+      unit.justBossSpawn = true;
+    }
+  });
+}
+
 /* ================= ENEMY AI ================= */
 
 function summonEnemy(type, w){
   if(enemies.length >= maxEnemiesThisWave) return false;
 
   let summoned = createEnemy(type, w);
+
+summoned.justSummoned = true;
 
   // Insert summoned enemies above the first boss card
   let bossIndex = enemies.findIndex(e => e && e.bossId);
@@ -3696,7 +4013,6 @@ function summonEnemy(type, w){
     enemies.push(summoned);
   }
 
-  log(`🧟 ${summoned.name} joins the battle!`);
 
   let init = getInitiative(summoned, wave);
 
@@ -3715,15 +4031,14 @@ function summonEnemy(type, w){
 
   turnQueue = alreadyActed.concat(upcoming);
 
-  renderTurnBar();
-  render();
+renderTurnBar();
 
-  return true;
+return summoned;
 }
 
 function enemyAI(i){
 
-  let e = enemies[i];
+let e = enemies[i];
   
 if(!e || e.hp <= 0 || e.dead) return;
 
@@ -3749,29 +4064,90 @@ if(
   let targets = alive(heroes);
   if(!targets.length) return;
 
-  let usable = e.abilities.filter(a => a.cooldown <= 0);
+let usable = e.abilities.filter(a => a.cooldown <= 0);
 
-  if(usable.length === 0){
-    usable = [e.abilities[0]];
+if(usable.length === 0){
+  usable = [e.abilities[0]];
+}
+
+let summonSkillNames = [
+  "Call Reinforcements",
+  "Dungeon Alarm",
+  "Call Minions",
+  "Royal Guard Call"
+];
+
+let summonSkills = usable.filter(a =>
+  summonSkillNames.includes(a.name)
+);
+
+let nonSummonSkills = usable.filter(a =>
+  !summonSkillNames.includes(a.name)
+);
+
+if(e.bossId){
+  e.bossTurnCount = (e.bossTurnCount || 0) + 1;
+}
+
+let skill;
+
+if(
+  e.bossId === "goblin_king" &&
+  e.hp <= e.maxHp * 0.45 &&
+  !e.goblinGuardSummoned
+){
+  let guardSkill = usable.find(a => a.name === "Royal Guard Call");
+  if(guardSkill){
+    skill = guardSkill;
   }
+}
 
-  let skill = usable[Math.floor(Math.random()*usable.length)];
+// Boss first turn: never summon
+if(!skill && e.bossId && e.bossTurnCount === 1){
+  skill = nonSummonSkills.length > 0
+    ? nonSummonSkills[Math.floor(Math.random() * nonSummonSkills.length)]
+    : usable[Math.floor(Math.random() * usable.length)];
+}
+
+// Boss second turn: 75% chance to summon if available
+else if(!skill && e.bossId && e.bossTurnCount === 2){
+  if(summonSkills.length > 0 && Math.random() < 0.75){
+    skill = summonSkills[Math.floor(Math.random() * summonSkills.length)];
+  } else if(!skill) {
+    skill = nonSummonSkills.length > 0
+      ? nonSummonSkills[Math.floor(Math.random() * nonSummonSkills.length)]
+      : usable[Math.floor(Math.random() * usable.length)];
+  }
+}
+
+// All other turns: normal random
+else {
+  skill = usable[Math.floor(Math.random() * usable.length)];
+}
 
 e.intent = skill.name;
 
-  setCooldown(e, skill);
+setCooldown(e, skill);
 
 /* ================= BOSS SUMMON ABILITIES ================= */
 
 if(e.bossId === "royal_assassin" && skill.name === "Call Reinforcements"){
 
-  let summoned = 0;
+  let summonedEnemies = [];
 
-  if(summonEnemy("assassin", wave)) summoned++;
-  if(summonEnemy("assassin", wave)) summoned++;
+  let s1 = summonEnemy("assassin", wave);
+  if(s1) summonedEnemies.push(s1);
 
-  if(summoned > 0){
+  let s2 = summonEnemy("assassin", wave);
+  if(s2) summonedEnemies.push(s2);
+
+  if(summonedEnemies.length > 0){
     log(`🗡️ ${e.name} calls assassins from the shadows!`);
+
+    summonedEnemies.forEach(summoned => {
+      log(`🧟 ${summoned.name} joins the battle!`);
+    });
+
   } else {
     log(`🗡️ ${e.name} tries to call reinforcements, but the battlefield is full!`);
   }
@@ -3782,8 +4158,11 @@ if(e.bossId === "royal_assassin" && skill.name === "Call Reinforcements"){
 
 if(e.bossId === "dungeon_warden" && skill.name === "Dungeon Alarm"){
 
-  if(summonEnemy("guard", wave)){
+  let summoned = summonEnemy("guard", wave);
+
+  if(summoned){
     log(`🚨 ${e.name} sounds the prison alarm!`);
+    log(`🧟 ${summoned.name} joins the battle!`);
   } else {
     log(`🚨 ${e.name} sounds the alarm, but no more guards can enter!`);
   }
@@ -3794,13 +4173,28 @@ if(e.bossId === "dungeon_warden" && skill.name === "Dungeon Alarm"){
 
 if(e.bossId === "goblin_king" && skill.name === "Call Minions"){
 
-  let summonPool = ["goblin", "hobgoblin", "elite_goblin"];
-  let type = summonPool[Math.floor(Math.random() * summonPool.length)];
+  let summonedEnemies = [];
 
-  if(summonEnemy(type, wave)){
-    log(`👑 ${e.name} uses Call Minions!`);
+  let s1 = summonEnemy("goblin", wave);
+  if(s1) summonedEnemies.push(s1);
+
+  let s2 = summonEnemy("hobgoblin", wave);
+  if(s2) summonedEnemies.push(s2);
+
+  let s3 = summonEnemy("elite_goblin", wave);
+  if(s3) summonedEnemies.push(s3);
+
+  if(summonedEnemies.length > 0){
+
+    log(`👑 ${e.name} slams his weapon into the stone and calls his horde!`);
+
+    summonedEnemies.forEach(summoned => {
+      log(`💥 ${summoned.icon || "🧟"} ${summoned.name} bursts onto the battlefield!`);
+    });
+
   } else {
-    log(`👑 ${e.name} tries to call minions, but the battlefield is full!`);
+
+    log(`👑 ${e.name} roars for reinforcements, but the battlefield is full!`);
   }
 
   render();
@@ -3811,8 +4205,19 @@ if(e.bossId === "goblin_king" && skill.name === "Royal Guard Call"){
 
   if(e.hp <= e.maxHp * 0.45){
 
-    if(summonEnemy("goblin_king_guard", wave)){
-      log(`⚔️ ${e.name}'s royal guard enters battle!`);
+if(enemies.length >= maxEnemiesThisWave){
+  let removeIndex = enemies.findIndex(x => x && !x.bossId);
+  if(removeIndex !== -1){
+    enemies.splice(removeIndex, 1);
+  }
+}
+
+    let summoned = summonEnemy("goblin_king_guard", wave);
+
+    if(summoned){
+    e.goblinGuardSummoned = true;
+      log(`⚔️ ${e.name} pounds his chest and summons his royal guard!`);
+      log(`🛡️ ${summoned.icon || "🧟"} ${summoned.name} storms onto the battlefield!`);
     } else {
       log(`⚔️ ${e.name} calls his guard, but the battlefield is full!`);
     }
@@ -3821,16 +4226,19 @@ if(e.bossId === "goblin_king" && skill.name === "Royal Guard Call"){
     return;
   }
 
-  // If he is above 45% HP, do not waste the turn.
   skill = e.abilities[0];
   e.intent = skill.name;
 }
 
-  let weighted = [];
+let aggroTargets = targets.filter(hero => hero.aggro && hero.aggro > 0);
 
-targets.forEach(hero => {
+let weighted = [];
 
-  let weight = hero.def > 12 ? 3 : 1;
+(aggroTargets.length ? aggroTargets : targets).forEach(hero => {
+
+  let weight = hero.aggro && hero.aggro > 0
+    ? 8
+    : hero.def > 12 ? 3 : 1;
 
   for(let i = 0; i < weight; i++){
     weighted.push(hero);
@@ -3860,6 +4268,7 @@ if(target.arcaneBarrier && target.arcaneBarrier > 0){
 }
 
 target.hp = Math.max(0, target.hp - dmg);
+showFloatText(target, `-${dmg}`, "damage");
 
 if(target.hp <= 0){
   target.hp = 0;
@@ -3873,6 +4282,13 @@ if(target.status?.defend?.counter && dmg > 0){
   let counterDmg = Math.max(1, Math.floor(getStats(target).def * 0.8));
   e.hp = Math.max(0, e.hp - counterDmg);
   log(`🛡️ ${target.name} counters ${e.name} for ${counterDmg}`);
+
+  if(e.hp <= 0){
+    e.hp = 0;
+    e.dead = true;
+    cleanupDeadEnemies();
+    return;
+  }
 }
 
     log(`${e.name} uses ${skill.name} on ${target.name} for ${dmg}`);
@@ -3901,6 +4317,7 @@ if(t.arcaneBarrier && t.arcaneBarrier > 0){
 }
 
 t.hp = Math.max(0, t.hp - dmg);
+showFloatText(t, `-${dmg}`, "damage");
 
 if(t.hp <= 0){
   t.hp = 0;
@@ -3958,10 +4375,9 @@ function renderTurnBar(){
     ${t.type === "hero" ? "turnHero" : "turnEnemy"}
     ${index === 0 ? "turnActive" : ""}`;
 
-    div.innerHTML = `
-      <b>${t.type === "hero" ? "🛡️" : "👹"} ${entity.name}</b><br>
-      HP ${entity.hp}/${entity.maxHp}
-    `;
+div.innerHTML = `
+  <b>${t.type === "hero" ? "🛡️" : "👹"} ${entity.name}</b>
+`;
 
     bar.appendChild(div);
   });
@@ -3997,9 +4413,13 @@ if(
 heroes.forEach(h=>{
 
 p.innerHTML +=`
+
 <div class="card
 ${heroes.indexOf(h)===selectedAlly ? 'selected' : ''}
-${h.hp <= 0 ? 'dead' : ''}"
+${h.hp <= 0 ? 'dead' : ''}
+${h.justRecruited ? 'summonedEnemy' : ''}"
+
+data-name="${h.name}"
 
 onclick="
 if(${h.hp <= 0 || h.dead}){
@@ -4021,7 +4441,7 @@ render();
 
   <div style="width:70%;">
     <b>${h.name} <span style="color:gold;font-size:11px;">Lv.${h.level}</span></b><br>
-    HP ${h.hp}/${h.maxHp}
+    HP ${h.hp}/${h.maxHp}${statusIcons(h)}
 
     <div class="hpBar">
       <div class="hpFill"
@@ -4035,10 +4455,11 @@ render();
       : 'red'
       };
       ">
-      </div>
-    </div>
+</div>
+</div>
 
-    <div class="xpLabel">
+
+<div class="xpLabel">
       XP: ${h.xp || 0} / ${xpToNext(h.level)}
     </div>
 
@@ -4069,10 +4490,14 @@ render();
 
 
 enemies.forEach((en,i)=>{
+
 e.innerHTML+=`
 <div class="card enemyCard
 ${i===selectedEnemy ? 'selected' : ''}
-${en.dead ? 'dead' : ''}"
+${en.dead ? 'dead' : ''}
+${en.justBossSpawn ? 'bossSpawn' : en.justSummoned ? 'summonedEnemy' : ''}"
+data-name="${en.name}"
+
 onclick="
 if(selectedEnemy === ${i}){
   selectedEnemy = null;
@@ -4082,14 +4507,14 @@ if(selectedEnemy === ${i}){
 render();
 ">
 
-<b>${en.name}</b><br>
+<b>${en.icon || ""} ${en.name}</b><br>
 
 ${en.intent
   ? `<span style="color:orange;">Intent: ${en.intent}</span><br>`
   : ""
 }
 
-HP ${en.hp}/${en.maxHp}
+HP ${en.hp}/${en.maxHp}${statusIcons(en)}
 
 <div class="hpBar">
 <div class="hpFill"
@@ -4105,6 +4530,7 @@ background:${
 ">
 </div>
 </div>
+
 </div>`;
 });
 
@@ -4112,7 +4538,43 @@ renderTurnBar();
 
 renderHotbar();
 
+heroes.forEach(h => {
+  if(h.justRecruited && !h.recruitAnimationQueued){
+
+    h.recruitAnimationQueued = true;
+
+    setTimeout(() => {
+      h.justRecruited = false;
+      h.recruitAnimationQueued = false;
+
+      let enemiesStillAnimating = enemies.some(en =>
+        en.justSummoned || en.justBossSpawn
+      );
+
+      if(!enemiesStillAnimating){
+        render();
+      }
+
+    }, 1100);
+  }
+});
+
+enemies.forEach(en => {
+  if(en.justSummoned && !en.summonAnimationQueued){
+
+    en.summonAnimationQueued = true;
+
+setTimeout(() => {
+  en.justSummoned = false;
+  en.justBossSpawn = false;
+  en.summonAnimationQueued = false;
+  render();
+}, 1350);
+  }
+});
+
 }
+
 /* =========================================================
    XP + LEVEL + CLASS EVOLUTION SYSTEM
    ========================================================= */
@@ -4290,7 +4752,8 @@ if(h._class === "Knight"){
       cooldown:0,
       scale:"attack",
       target:"self",
-      apply:"defend"
+      apply:"defend",
+      aggroTurns:2
     });
 
     addAbility(h, {
@@ -4411,7 +4874,7 @@ if(h._class === "Rogue"){
       apply:"poison"
     });
 
-    addAbility(h, {
+    replaceAbility(h, "Smoke Dodge", {
       name:"Shadow Step",
       type:"support",
       power:0,
@@ -4476,7 +4939,7 @@ if(h._class === "Cleric"){
     addAbility(h, {
       name:"Sanctuary",
       type:"support",
-      power:24,
+      power:30,
       cost:20,
       cooldownMax:5,
       cooldown:0,
@@ -4557,6 +5020,18 @@ if(h._class === "Mage"){
       apply:"burn",
       target:"enemy"
     });
+
+replaceAbility(h, "Lightning", {
+  name:"Chain Lightning",
+  type:"magic",
+  power:42,
+  cost:22,
+  cooldownMax:4,
+  cooldown:0,
+  scale:"magic",
+  target:"enemy",
+  chain:true
+});
 
     addAbility(h, {
       name:"Arcane Barrier",
