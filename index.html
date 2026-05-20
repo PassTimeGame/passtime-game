@@ -232,6 +232,15 @@ box-shadow:0 0 12px yellow;
   color:white;
 }
 
+.statusIconSlot{
+  display:inline-block;
+  min-width:46px;
+  height:16px;
+  line-height:16px;
+  vertical-align:top;
+  white-space:nowrap;
+}
+
 .skillAttack{
   background:#8b1e1e;
   box-shadow:0 3px 0 #4a0f0f;
@@ -259,6 +268,23 @@ box-shadow:0 0 12px yellow;
   margin-left:-18px;
   margin-top:-20px;
   margin-bottom:-48px;
+}
+
+.royalGuardSprite{
+  width:138px;
+  height:128px;
+
+  background-image:url("sprites/royalGuard_spear.png");
+  background-repeat:no-repeat;
+  background-size:512px 128px;
+  background-position:0px 0px;
+  image-rendering:pixelated;
+
+  margin-left:-18px;
+  margin-top:-20px;
+  margin-bottom:-48px;
+
+  transform:translate(0px, -20px);
 }
 
 	#knightSprite{
@@ -716,6 +742,21 @@ html, body{
   margin-bottom:-52px;
 }
 
+.royalGuardSprite{
+  width:138px;
+  height:128px;
+
+  background-size:512px 128px;
+
+  margin-left:-18px;
+  margin-top:-28px;
+  margin-bottom:-52px;
+
+  position:relative;
+  z-index:30;
+  transform:translate(0px, -20px);
+}
+
   .screen{
     overflow:visible;
   }
@@ -869,6 +910,8 @@ let waveHandled = false;
 let animationPlaying = false;
 
 let knightAnimTimer = null;
+
+let royalGuardAnimTimers = {};
 
 let maxEnemiesThisWave = 5;
 
@@ -1029,8 +1072,62 @@ function setKnightAnimation(animClass, duration = 500){
         sprite.style.backgroundSize = "512px 128px";
         sprite.style.backgroundPosition = "0px 0px";
         sprite.style.transform = "translate(0px, -20px)";
+sprite.style.marginTop = "-20px";
+sprite.style.marginBottom = "-58px";
         animationPlaying = false;
         knightAnimTimer = null;
+      }, frameTime);
+    }
+  }, frameTime);
+}
+
+function setRoyalGuardAnimation(guard, abilityName, duration = 500){
+
+  if(!guard) return;
+
+  let sprite = document.querySelector(
+    `#party .royalGuardSprite[data-anim-id="${guard.animId}"]`
+  );
+
+  if(!sprite) return;
+
+  animationPlaying = true;
+
+  if(royalGuardAnimTimers[guard.animId]){
+    clearInterval(royalGuardAnimTimers[guard.animId]);
+  }
+
+let sheet = "sprites/royalGuard_spear.png";
+let guardTransform = "translate(0px, -20px)";
+
+if(abilityName && abilityName.trim() === "Shield Wall"){
+  sheet = "sprites/royalGuard_shield.png";
+  guardTransform = "translate(0px, -10px)";
+}
+
+  sprite.style.backgroundImage = `url("${sheet}")`;
+  sprite.style.backgroundSize = "512px 128px";
+  sprite.style.backgroundRepeat = "no-repeat";
+  sprite.style.backgroundPosition = "0px 0px";
+  sprite.style.transform = guardTransform;
+
+  let frames = ["0px 0px", "-128px 0px", "-256px 0px", "-384px 0px"];
+  let frame = 0;
+  let frameTime = duration / frames.length;
+
+  royalGuardAnimTimers[guard.animId] = setInterval(() => {
+    sprite.style.backgroundPosition = frames[frame];
+    frame++;
+
+    if(frame >= frames.length){
+      clearInterval(royalGuardAnimTimers[guard.animId]);
+
+      setTimeout(() => {
+        sprite.style.backgroundImage = `url("sprites/royalGuard_spear.png")`;
+        sprite.style.backgroundSize = "512px 128px";
+        sprite.style.backgroundPosition = "0px 0px";
+        royalGuardAnimTimers[guard.animId] = null;
+        animationPlaying = false;
       }, frameTime);
     }
   }, frameTime);
@@ -1517,8 +1614,8 @@ function statusIcons(entity){
   if(entity.status.defend) icons.push("🛡️");
 
   return icons.length
-    ? `<span style="font-size:13px; margin-left:4px;">${icons.join("")}</span>`
-    : "";
+? `<span style="font-size:13px;">${icons.join("")}</span>`
+: "";
 }
 
 const statusEffects = {
@@ -3783,6 +3880,9 @@ if(wave <= 2 && h._class === "Knight"){
 let knightAnim = null;
 let knightAnimDuration = 550;
 
+let royalGuardAnim = false;
+let royalGuardAnimDuration = 550;
+
 if(h._class === "Knight"){
   if(a.apply === "defend"){
     knightAnim = "knightShield";
@@ -3798,6 +3898,12 @@ if(h._class === "Knight"){
   }
 }
 
+if(h._class === "RoyalGuard"){
+  if(a.name === "Spear Strike" || a.name === "Shield Wall"){
+    royalGuardAnim = true;
+  }
+}
+
 if(a.name === "Defend"){
   applyStatus(h, "defend");
 
@@ -3810,6 +3916,10 @@ render();
 
 if(knightAnim){
   setKnightAnimation(knightAnim, knightAnimDuration);
+}
+
+if(royalGuardAnim){
+  setRoyalGuardAnimation(h, a.name, royalGuardAnimDuration);
 }
 
 endTurnAfterDelay(850);
@@ -3839,6 +3949,10 @@ if(a.aggroTurns){
     setKnightAnimation(knightAnim, knightAnimDuration);
   }
 
+if(royalGuardAnim){
+  setRoyalGuardAnimation(h, a.name, royalGuardAnimDuration);
+}
+
 endTurnAfterDelay(700);
 return;
 }
@@ -3864,6 +3978,10 @@ render();
 
 if(knightAnim){
   setKnightAnimation(knightAnim, knightAnimDuration);
+}
+
+if(royalGuardAnim){
+  setRoyalGuardAnimation(h, a.name, royalGuardAnimDuration);
 }
 
 endTurnAfterDelay(700);
@@ -4095,6 +4213,10 @@ render();
 
 if(knightAnim){
   setKnightAnimation(knightAnim, knightAnimDuration);
+}
+
+if(royalGuardAnim){
+  setRoyalGuardAnimation(h, a.name, royalGuardAnimDuration);
 }
 
 endTurnAfterDelay(700);
@@ -4561,7 +4683,7 @@ render();
 
   <div style="width:70%;">
     <b>${h.name} <span style="color:gold;font-size:11px;">Lv.${h.level}</span></b><br>
-    HP ${h.hp}/${h.maxHp}${statusIcons(h)}
+    HP ${h.hp}/${h.maxHp}$<span class="statusIconSlot">${statusIcons(h)}</span>
 
     <div class="hpBar">
       <div class="hpFill"
@@ -4590,17 +4712,32 @@ render();
     </div>
   </div>
 
-  ${h._class === "Knight"
-    ? `<div
-        id="knightSprite"
-        class="knightSprite knightIdle"
-        style="
-          background-image:url('sprites/knight_attack.png');
-          margin-top:-15px;
-          margin-right:30px;
-        "
-      ></div>`
-    : ""}
+${h._class === "Knight"
+  ? `<div
+      id="knightSprite"
+      class="knightSprite knightIdle"
+style="
+  background-image:url('sprites/knight_attack.png');
+  margin-top:-25px;
+  margin-right:0px;
+  margin-bottom:-58px;
+  transform:translate(0px, -20px);
+"
+    ></div>`
+  : ""}
+
+${h._class === "RoyalGuard"
+  ? `<div
+      class="royalGuardSprite"
+      data-anim-id="${h.animId}"
+style="
+  background-image:url('sprites/royalGuard_spear.png');
+  margin-top:-20px;
+  margin-right:0px;
+  margin-bottom:-58px;
+"
+    ></div>`
+  : ""}
 
 </div>
 </div>
@@ -4635,7 +4772,7 @@ ${en.intent
   : ""
 }
 
-HP ${en.hp}/${en.maxHp}${statusIcons(en)}
+HP ${en.hp}/${en.maxHp}<span class="statusIconSlot">${statusIcons(en)}</span>
 
 <div class="hpBar">
 <div class="hpFill"
