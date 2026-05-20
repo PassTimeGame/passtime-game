@@ -33,7 +33,7 @@ overflow:hidden;
   width:48%;
   height:100%;
   overflow-y:auto;
-  overflow-x:visible;
+  overflow-x:hidden;
   min-width:0;
   display:flex;
   flex-direction:column;
@@ -204,7 +204,7 @@ box-shadow:0 0 12px yellow;
 
 @keyframes attackBump{
   0%{ transform:scale(1); }
-  50%{ transform:scale(1.05) translateY(-3px); }
+  50%{ transform:scale(1.015) translateY(-2px); }
   100%{ transform:scale(1); }
 }
 
@@ -257,7 +257,7 @@ box-shadow:0 0 12px yellow;
 }
 
 .knightSprite{
-  width:138px;
+  width:128px;
   height:128px;
 
   background-image:url("sprites/knight_attack.png");
@@ -284,11 +284,11 @@ box-shadow:0 0 12px yellow;
   margin-top:-20px;
   margin-bottom:-48px;
 
-  transform:translate(0px, -20px);
+  transform:translate(0px, -35px);
 }
 
 	#knightSprite{
-  transform:translate(0px, -20px);
+  transform:translate(0px, -35px);
 }
 
 /* IDLE FRAME */
@@ -303,19 +303,15 @@ box-shadow:0 0 12px yellow;
 
 .knightQuickAttack{
   animation: knightQuickAttack 0.30s steps(4) 1;
-  transform: translate(10px, 10px);
 }
 
 /* PLAY 4-FRAME SHIELD */
 .knightShield{
   animation: knightShield 0.45s steps(4) 1;
-  transform: translate(10px, 20px);
 }
 
 .knightShieldBash{
   animation: knightShieldBash 0.55s steps(4) 1;
-
-  transform: translate(5px, 15px);
 }
 
 @keyframes knightAttack{
@@ -417,19 +413,14 @@ box-shadow:0 0 12px yellow;
 @keyframes summonPop{
   0%{
     opacity:0;
-    transform:scale(0.82) translateY(-8px);
-    filter:brightness(2) blur(2px);
+    transform:scale(0.96) translateY(-3px);
+    filter:brightness(1.25);
   }
 
   45%{
     opacity:1;
-    transform:scale(1.04) translateY(0);
-    filter:brightness(1.45) blur(0px);
-  }
-
-  70%{
-    transform:scale(0.99);
-    filter:brightness(1.15);
+    transform:scale(1.01) translateY(0);
+    filter:brightness(1.1);
   }
 
   100%{
@@ -587,7 +578,7 @@ html, body{
   min-height:0;
 
   overflow-y:auto;
-  overflow-x:visible;
+  overflow-x:hidden;
 
   -webkit-overflow-scrolling:touch;
 
@@ -732,13 +723,13 @@ html, body{
 }
 
 .knightSprite{
-  width:138px;
+  width:128px;
   height:128px;
 
   background-size:512px 128px;
 
   margin-left:-18px;
-  margin-top:-28px;
+  margin-top:-20px;
   margin-bottom:-52px;
 }
 
@@ -749,12 +740,12 @@ html, body{
   background-size:512px 128px;
 
   margin-left:-18px;
-  margin-top:-28px;
+  margin-top:-20px;
   margin-bottom:-52px;
 
   position:relative;
   z-index:30;
-  transform:translate(0px, -20px);
+  transform:translate(0px, -35px);
 }
 
   .screen{
@@ -782,7 +773,7 @@ html, body{
 #knightSprite{
   position:relative;
   z-index:30;
-  transform:translate(0px, -20px);
+  transform:translate(0px, -35px);
 }
 
 #combatHotbar{
@@ -860,6 +851,13 @@ html, body{
   color:white;
   font-size:24px;
   font-weight:bold;
+}
+
+@media (max-width: 768px){
+  .knightSprite,
+  .royalGuardSprite{
+    transform: translate(0px, -50px) !important;
+  }
 }
 
 }
@@ -1026,24 +1024,18 @@ function setKnightAnimation(animClass, duration = 500){
   }
 
   let sheet = "sprites/knight_attack.png";
-  let moveStart = "translate(0px, -20px)";
-  let moveEnd = "translate(0px, -20px)";
+  let moveStart = "translate(0px, -35px)";
+  let moveEnd = "translate(0px, -35px)";
 
-  if(animClass === "knightShield"){
-    sheet = "sprites/knight_shield.png";
-    moveStart = "translate(5px, -5px)";
-    moveEnd = "translate(5px, -5px)";
-  }
-  else if(animClass === "knightQuickAttack"){
-    sheet = "sprites/knight_quickattack.png";
-    moveStart = "translate(5px, -15px)";
-    moveEnd = "translate(5px, -15px)";
-  }
-  else if(animClass === "knightShieldBash"){
-    sheet = "sprites/knight_shieldBash.png";
-    moveStart = "translate(10px, -8px)";
-    moveEnd = "translate(10px, -8px)";
-  }
+if(animClass === "knightShield"){
+  sheet = "sprites/knight_shield.png";
+}
+else if(animClass === "knightQuickAttack"){
+  sheet = "sprites/knight_quickAttack.png";
+}
+else if(animClass === "knightShieldBash"){
+  sheet = "sprites/knight_shieldBash.png";
+}
 
   sprite.style.backgroundImage = `url("${sheet}")`;
   sprite.style.backgroundSize = "512px 128px";
@@ -1071,9 +1063,7 @@ function setKnightAnimation(animClass, duration = 500){
         sprite.style.backgroundImage = `url("sprites/knight_attack.png")`;
         sprite.style.backgroundSize = "512px 128px";
         sprite.style.backgroundPosition = "0px 0px";
-        sprite.style.transform = "translate(0px, -20px)";
-sprite.style.marginTop = "-20px";
-sprite.style.marginBottom = "-58px";
+sprite.style.transform = "translate(0px, -35px)";
         animationPlaying = false;
         knightAnimTimer = null;
       }, frameTime);
@@ -1097,12 +1087,14 @@ function setRoyalGuardAnimation(guard, abilityName, duration = 500){
     clearInterval(royalGuardAnimTimers[guard.animId]);
   }
 
-let sheet = "sprites/royalGuard_spear.png";
-let guardTransform = "translate(0px, -20px)";
+let guardTransform = "translate(0px, -35px)";
+let sheet;
 
 if(abilityName && abilityName.trim() === "Shield Wall"){
   sheet = "sprites/royalGuard_shield.png";
-  guardTransform = "translate(0px, -10px)";
+}
+else{
+  sheet = "sprites/royalGuard_spear.png";
 }
 
   sprite.style.backgroundImage = `url("${sheet}")`;
@@ -1611,7 +1603,8 @@ function statusIcons(entity){
   if(entity.status.burn) icons.push("🔥");
   if(entity.status.regen) icons.push("✨");
   if(entity.status.stun) icons.push("💫");
-  if(entity.status.defend) icons.push("🛡️");
+  if(entity.status.defend?.counter) icons.push("↩️");
+else if(entity.status.defend) icons.push("🛡️");
 
   return icons.length
 ? `<span style="font-size:13px;">${icons.join("")}</span>`
@@ -1763,7 +1756,10 @@ else if(k === "regen"){
 else if(k === "defend"){
   log(`🛡️ ${t.name} braces for impact`);
 }
-else{
+else if(k === "counter"){
+  log(`↩️ ${t.name} prepares to counterattack`);
+}
+else if(k !== "StartingShield"){
   log(`${t.name} is affected by ${k}`);
 }
       }
@@ -1827,7 +1823,7 @@ function showAbilityPreview(hero, ability){
     Target: ${ability.target}<br>
     ${ability.apply ? `Effect: ${ability.apply}<br>` : ""}
     <br>
-    <span style="color:#aaa;">Tap to cast. Hold and slide finger down to preview.</span>
+    <span style="color:#aaa;">Tap to cast.</span>
   `;
 }
 
@@ -3040,7 +3036,10 @@ log(`STORY:`);
 log(`Assassins have invaded the castle.`, false);
 log(`The King is in danger.`, false);
 log(`You are a loyal Knight rushing to defend the throne.`, false);
-log(`TIP: Use Skills (Quick Slash, Guard Break, Etc.) to fight.`, false);
+log(`TIPS: Use Skills (Quick Slash, Guard Break, Etc.) to fight.`, false);
+if(window.innerWidth <= 768){
+  log(`TIPS: Click Skills to activate, Hold Skills to view more info!`, false);
+}
 }
 
 window.addEventListener("DOMContentLoaded", initGame);
@@ -3085,6 +3084,12 @@ turnQueue.push({
 });
 
 turnQueue.sort((a,b)=>b.init-a.init);
+
+enemies.forEach(e => {
+  if(e && e.hp > 0 && !e.dead){
+    setEnemyIntent(e);
+  }
+});
 
 if(announceWave){
   log(`🔥 ENTERING WAVE ${wave}`);
@@ -3311,12 +3316,35 @@ typeStory(storyText);
 
 }
 
-if(wave === 12 && !storyEventsTriggered[12]){
+if(wave === 12 && !storyEventsTriggered[11]){
+  storyEventsTriggered[11] = true;
+  
+  storyText = `
+The caves grow louder as you descend deeper below the dungeon.<br>
+Broken cages and scattered bones line the cavern walls.
+
+<p>Behind rusted bars, you spot a human in white robes imprisoned by goblins.</p>
+
+<p>She looks exhausted, but still alive.</p>
+`;
+
+
+typeStory(storyText);
+
+}
+
+if(wave === 13 && !storyEventsTriggered[12]){
   storyEventsTriggered[12] = true;
 
   storyText = `
-A Cleric is found imprisoned by goblins.<br>
-She joins your escape.
+The goblin guards collapse one by one beneath your assault.<br>
+With the cavern finally silent, you force open the prison cage.
+
+<p>The Cleric steadies herself and grips her holy staff.</p>
+
+<p>"You have my thanks. I will fight beside you."</p>
+
+<p>The Cleric joins your party.</p>
   `;
 
 typeStory(storyText);
@@ -3329,8 +3357,8 @@ recruit({
   level: clericLevel,
   xp:0,
 
-  hp: scaleStat(95, clericLevel, 0.16),
-  maxHp: scaleStat(95, clericLevel, 0.16),
+  hp: scaleStat(100, clericLevel, 0.16),
+  maxHp: scaleStat(100, clericLevel, 0.16),
 
   attack: scaleStat(6, clericLevel, 0.10),
   def: scaleStat(10, clericLevel, 0.14),
@@ -4140,7 +4168,7 @@ t.hp = Math.max(0, t.hp - dmg);
 showFloatText(t, `-${dmg}`, "damage");
 playCardAnimation(t, "damageShake");
 
-if(t.status?.defend?.counter && dmg > 0){
+if(t.hp > 0 && t.status?.defend?.counter && dmg > 0){
 
   let counterDmg = Math.max(
     1,
@@ -4273,6 +4301,21 @@ renderTurnBar();
 return summoned;
 }
 
+function setEnemyIntent(e){
+  if(!e || !e.abilities) return;
+
+  let usable = e.abilities.filter(a => a.cooldown <= 0);
+
+  if(usable.length === 0){
+    usable = [e.abilities[0]];
+  }
+
+  let skill = usable[Math.floor(Math.random() * usable.length)];
+
+  e.intent = skill.name;
+  e.intentSkillName = skill.name;
+}
+
 function enemyAI(i){
 
 let e = enemies[i];
@@ -4306,6 +4349,8 @@ let usable = e.abilities.filter(a => a.cooldown <= 0);
 if(usable.length === 0){
   usable = [e.abilities[0]];
 }
+
+let intentSkill = e.abilities.find(a => a.name === e.intentSkillName && a.cooldown <= 0);
 
 let summonSkillNames = [
   "Call Reinforcements",
@@ -4358,11 +4403,12 @@ else if(!skill && e.bossId && e.bossTurnCount === 2){
 }
 
 // All other turns: normal random
+else if(intentSkill){
+  skill = intentSkill;
+}
 else {
   skill = usable[Math.floor(Math.random() * usable.length)];
 }
-
-e.intent = skill.name;
 
 setCooldown(e, skill);
 
@@ -4467,6 +4513,13 @@ if(enemies.length >= maxEnemiesThisWave){
   e.intent = skill.name;
 }
 
+if(skill.type === "support" && skill.target === "self" && skill.apply){
+  applyStatus(e, skill.apply);
+  log(`${e.name} uses ${skill.name}!`);
+  render();
+  return;
+}
+
 let aggroTargets = targets.filter(hero => hero.aggro && hero.aggro > 0);
 
 let weighted = [];
@@ -4517,7 +4570,7 @@ if(target.hp <= 0){
   render();
 }
 
-if(target.status?.defend?.counter && dmg > 0){
+if(target.hp > 0 && target.status?.defend?.counter && dmg > 0){
   let counterDmg = Math.max(1, Math.floor(getStats(target).def * 0.8));
   e.hp = Math.max(0, e.hp - counterDmg);
   log(`🛡️ ${target.name} counters ${e.name} for ${counterDmg}`);
@@ -4568,7 +4621,7 @@ if(t.hp <= 0){
   render();
 }
 
-if(t.status?.defend?.counter && dmg > 0){
+if(t.hp > 0 && t.status?.defend?.counter && dmg > 0){
   let counterDmg = Math.max(1, Math.floor(getStats(t).def * 0.8));
   e.hp = Math.max(0, e.hp - counterDmg);
   log(`🛡️ ${t.name} counters ${e.name} for ${counterDmg}`);
@@ -4588,6 +4641,7 @@ if(e.hp <= 0){
   }
 }
 
+setEnemyIntent(e);
   render();
 }
 
@@ -4658,7 +4712,7 @@ p.innerHTML +=`
 <div class="card
 ${heroes.indexOf(h)===selectedAlly ? 'selected' : ''}
 ${h.hp <= 0 ? 'dead' : ''}
-${h.justRecruited ? 'heroSpawn' : ''}"
+${h.justRecruited && !h.recruitAnimationQueued ? 'heroSpawn' : ''}"
 
 data-name="${h.name}"
 data-anim-id="${h.animId}"
@@ -4683,7 +4737,7 @@ render();
 
   <div style="width:70%;">
     <b>${h.name} <span style="color:gold;font-size:11px;">Lv.${h.level}</span></b><br>
-    HP ${h.hp}/${h.maxHp}$<span class="statusIconSlot">${statusIcons(h)}</span>
+    HP ${h.hp}/${h.maxHp}<span class="statusIconSlot">${statusIcons(h)}</span>
 
     <div class="hpBar">
       <div class="hpFill"
@@ -4718,10 +4772,9 @@ ${h._class === "Knight"
       class="knightSprite knightIdle"
 style="
   background-image:url('sprites/knight_attack.png');
-  margin-top:-25px;
-  margin-right:0px;
+  margin-top:-20px;
   margin-bottom:-58px;
-  transform:translate(0px, -20px);
+  transform:translate(0px, -35px);
 "
     ></div>`
   : ""}
@@ -4752,7 +4805,7 @@ e.innerHTML+=`
 <div class="card enemyCard
 ${i===selectedEnemy ? 'selected' : ''}
 ${en.dead ? 'dead' : ''}
-${en.justBossSpawn ? 'bossSpawn' : en.justSummoned ? 'summonedEnemy' : ''}"
+${!en.summonAnimationQueued && en.justBossSpawn ? 'bossSpawn' : !en.summonAnimationQueued && en.justSummoned ? 'summonedEnemy' : ''}"
 data-name="${en.name}"
 data-anim-id="${en.animId}"
 
@@ -5023,16 +5076,17 @@ if(h._class === "Knight"){
       aggroTurns:2
     });
 
-    addAbility(h, {
-      name:"Counter Stance",
-      type:"support",
-      power:0,
-      cooldownMax:4,
-      cooldown:0,
-      scale:"attack",
-      target:"self",
-      apply:"counter"
-    });
+addAbility(h, {
+  name:"Counter Stance",
+  type:"support",
+  power:0,
+  cooldownMax:4,
+  cooldown:0,
+  scale:"attack",
+  target:"self",
+  apply:"counter",
+  aggroTurns:2
+});
 
     log(`🌟 Knight evolved into ${h.name}!`);
   }
@@ -5059,7 +5113,7 @@ if(h._class === "Knight"){
     });
 
     addAbility(h, {
-      name:"Divine Guard",
+      name:"Guardians's Grace",
       type:"support",
       power:18,
       cost:18,
@@ -5093,8 +5147,8 @@ if(h._class === "Knight"){
       target:"enemy"
     });
 
-    addAbility(h, {
-      name:"Guardian Aura",
+    replaceAbility(h, "Guardians's Grace", {
+      name:"Guardian's Aura",
       type:"support",
       power:26,
       cooldownMax:5,
@@ -5300,7 +5354,7 @@ replaceAbility(h, "Lightning", {
   chain:true
 });
 
-    addAbility(h, {
+    replaceAbility(h, "Mana Shield", {
       name:"Arcane Barrier",
       type:"support",
       power:0,
@@ -5308,7 +5362,8 @@ replaceAbility(h, "Lightning", {
       cooldownMax:5,
       cooldown:0,
       scale:"magic",
-      target:"self"
+      target:"self",
+      apply:"defend"
     });
 
     log(`🌟 Mage evolved into ${h.name}!`);
