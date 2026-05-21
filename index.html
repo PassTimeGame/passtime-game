@@ -1725,7 +1725,7 @@ regen:{
     if(healed > 0 && Array.isArray(target._regenCasters)){
 
       // split XP among all regen sources
-      let xp = Math.floor((healed * 1.5) / target._regenCasters.length);
+      let xp = Math.floor((healed * 1.2) / target._regenCasters.length);
 
       target._regenCasters.forEach(caster=>{
         gainHealingXP(caster, xp);
@@ -1935,7 +1935,7 @@ function isMobile(){
 function resetStoryPanel(){
   el("descPanel").innerHTML =
 `
-<b>STORY</b>
+<b>STORY - WAVE ${wave}</b>
 <hr>
 
 <div id="storyTextBox" style="
@@ -3316,6 +3316,7 @@ log(`<span class="tutorialText">⚔️ TIPS: Use Skills (Quick Slash, Guard Brea
 
 if(window.innerWidth <= 768){
   log(`<span class="tutorialText">📱 Tap Skills to activate. Long Press/Hold Skills to view more info!</span>`, false);
+log(`Tap this Log area for extended tutorial text`, false);
 }
 }
 
@@ -3742,7 +3743,7 @@ There is no turning back.
 
 typeStory(storyText);
 
-const mageLevel = 8;
+const mageLevel = 5;
 
 recruit({
   name:"Mage",
@@ -3750,15 +3751,15 @@ recruit({
   level: mageLevel,
   xp:0,
 
-  hp: scaleStat(105, mageLevel, 0.18),
-  maxHp: scaleStat(105, mageLevel, 0.18),
+hp: scaleStat(100, mageLevel, 0.18),
+maxHp: scaleStat(100, mageLevel, 0.18),
 
-  attack: scaleStat(8, mageLevel, 0.10),
-  def: scaleStat(9, mageLevel, 0.12),
-  magic: scaleStat(26, mageLevel, 0.20),
-  resist: scaleStat(18, mageLevel, 0.16),
+attack: scaleStat(7, mageLevel, 0.10),
+def: scaleStat(8, mageLevel, 0.12),
+magic: scaleStat(22, mageLevel, 0.20),
+resist: scaleStat(16, mageLevel, 0.16),
+speed: scaleStat(10, mageLevel, 0.08),
 
-  speed: 13,
   critRate: 0.15,
   critMult: 1.6,
   status:{},
@@ -5381,8 +5382,8 @@ addAbility(h, {
     replaceAbility(h, "Blade Rush", {
       name:"Kingbreaker",
       type:"physical",
-      power:62,
-      cooldownMax:5,
+      power:24,
+      cooldownMax:0,
       cooldown:0,
       scale:"attack",
       target:"enemy"
@@ -5478,9 +5479,9 @@ if(h._class === "Cleric"){
 replaceAbility(h, "Holy Bolt", {
   name:"Radiant Spear",
   type:"magic",
-  power:26,
+  power:18,
   cost:12,
-  cooldownMax:2,
+  cooldownMax:0,
   cooldown:0,
   scale:"magic",
   target:"enemy",
@@ -5513,9 +5514,9 @@ replaceAbility(h, "Holy Bolt", {
     replaceAbility(h, "Radiant Spear", {
       name:"Divine Light",
       type:"magic",
-      power:42,
+      power:26,
       cost:22,
-      cooldownMax:3,
+      cooldownMax:0,
       cooldown:0,
       scale:"magic",
       target:"allEnemies"
@@ -5575,9 +5576,9 @@ if(h._class === "Mage"){
     replaceAbility(h, "Firebolt", {
       name:"Void Bolt",
       type:"magic",
-      power:38,
+      power:22,
       cost:16,
-      cooldownMax:3,
+      cooldownMax:0,
       cooldown:0,
       scale:"magic",
       apply:"burn",
@@ -5589,7 +5590,7 @@ replaceAbility(h, "Lightning", {
   type:"magic",
   power:42,
   cost:22,
-  cooldownMax:4,
+  cooldownMax:2,
   cooldown:0,
   scale:"magic",
   target:"enemy",
@@ -5611,7 +5612,7 @@ replaceAbility(h, "Lightning", {
     log(`🌟 Mage evolved into ${h.name}!`);
   }
 
-  if(h.level >= 12 && !h._tier3){
+  if(h.level >= 10 && !h._tier3){
     h._tier3 = true;
     h.name = "Archmage";
 
@@ -5658,9 +5659,9 @@ replaceAbility(h, "Lightning", {
     replaceAbility(h, "Void Bolt", {
       name:"Void Storm",
       type:"magic",
-      power:74,
+      power:32,
       cost:34,
-      cooldownMax:6,
+      cooldownMax:0,
       cooldown:0,
       scale:"magic",
       target:"allEnemies",
