@@ -101,6 +101,7 @@ border:2px solid #444;
 padding:6px;
 height:150px;
 overflow-y:auto;
+cursor:pointer;
 }
 
 @keyframes buttonFlash {
@@ -152,9 +153,34 @@ button:disabled{opacity:0.4;}
   }
 }
 
+@keyframes tutorialTextPulse{
+  0%{
+    color:#ffd54a;
+    text-shadow:0 0 3px rgba(255,215,64,0.35);
+  }
+
+  50%{
+    color:#fff0a0;
+    text-shadow:
+      0 0 6px rgba(255,215,64,0.65),
+      0 0 12px rgba(255,215,64,0.35);
+  }
+
+  100%{
+    color:#ffd54a;
+    text-shadow:0 0 3px rgba(255,215,64,0.35);
+  }
+}
+
 .tutorialFlash{
   animation:tutorialSkillFlash 0.8s infinite;
   border:2px solid gold !important;
+}
+
+.tutorialText{
+  color:#ffd54a;
+  font-weight:bold;
+  animation:tutorialTextPulse 1.8s ease-in-out infinite;
 }
 
 .xpBar{
@@ -880,7 +906,16 @@ html, body{
 <div class="panelAbilities" id="abilityPanel"></div>
 <div class="panelDesc" id="descPanel"></div>
 </div>
-<div class="log" id="log"></div>
+<div class="log" id="log" onclick="showFullTutorialLog()" title="Click for extended tutorial">
+  <div style="
+    color:#888;
+    font-size:11px;
+    text-align:center;
+    padding-bottom:4px;
+  ">
+    Click for extended tutorial
+  </div>
+</div>
 </div>
 
 <div id="tooltip"></div>
@@ -1338,9 +1373,12 @@ function log(t, instant = true){
     box.scrollTop = box.scrollHeight;
 
     // prevent infinite log buildup
-    while(box.children.length > 80){
-      box.removeChild(box.firstChild);
-    }
+while(box.children.length > 80){
+  if(box.firstChild?.dataset?.permanent){
+    break;
+  }
+  box.removeChild(box.firstChild);
+}
 
     return;
   }
@@ -1351,11 +1389,9 @@ function log(t, instant = true){
 
 function typeNextLog(){
 
-  // 🚀 IF USER WANTS FULL SKIP
   if(skipAllLogs){
     let box = el("log");
 
-    // dump ALL remaining logs instantly
     while(logQueue.length > 0){
       let text = logQueue.shift();
       let line = document.createElement("div");
@@ -1365,7 +1401,6 @@ function typeNextLog(){
 
     box.scrollTop = box.scrollHeight;
 
-    // reset system
     typing = false;
     skipLogTyping = false;
     skipAllLogs = false;
@@ -1391,7 +1426,6 @@ function typeNextLog(){
 
   function typeCharInner(){
 
-    // 🚀 SKIP CURRENT LINE ONLY
     if(skipLogTyping){
       line.innerHTML = text;
       skipLogTyping = false;
@@ -1401,21 +1435,65 @@ function typeNextLog(){
     }
 
     if(i < text.length){
-      buffer += text[i];
-      line.textContent = buffer;
-      i++;
 
+      if(text[i] === "<"){
+        let close = text.indexOf(">", i);
+
+        if(close !== -1){
+          buffer += text.slice(i, close + 1);
+          i = close + 1;
+        } else {
+          buffer += text[i];
+          i++;
+        }
+      } else {
+        buffer += text[i];
+        i++;
+      }
+
+      line.innerHTML = buffer;
       box.scrollTop = box.scrollHeight;
 
       setTimeout(typeCharInner, 12);
+
     } else {
-      line.innerHTML = buffer;
+      line.innerHTML = text;
       box.scrollTop = box.scrollHeight;
       setTimeout(typeNextLog, 60);
     }
   }
 
   typeCharInner();
+}
+
+let tutorialLogOpen = false;
+
+function showFullTutorialLog(){
+
+  if(tutorialLogOpen) return;
+  tutorialLogOpen = true;
+
+  log(`<span class="tutorialText">📖 FULL TUTORIAL</span>`, true);
+
+  log(`<span class="tutorialText">⚔️ Combat:</span> Click a hero skill to use it. Physical skills usually scale with Attack. Magic and healing skills usually scale with Magic.`, true);
+
+  log(`<span class="tutorialText">🎯 Targeting:</span> Click enemies or allies to choose targets. Some skills hit one target, while others affect all enemies or all allies.`, true);
+
+  log(`<span class="tutorialText">⏳ Cooldowns:</span> Stronger skills often need turns to recharge. Skills with lower cooldowns are your reliable filler options.`, true);
+
+  log(`<span class="tutorialText">🛡️ Defend & Counter:</span> Defend reduces incoming damage. Counter reduces damage and strikes back against enemies that attack the hero before their next turn.`, true);
+
+  log(`<span class="tutorialText">☠️ Status Effects:</span> Poison stacks up to 5 times and deals more damage each tick. Burn deals damage over time. Regen heals over time. Stun can stop a turn.`, true);
+
+  log(`<span class="tutorialText">🧙 Party Roles:</span> Knight protects and breaks armor. Rogue deals fast damage and poison. Cleric heals and supports. Mage brings heavy magic damage.`, true);
+
+  log(`<span class="tutorialText">🎒 Equipment:</span> Gear improves hero stats. Stronger equipment can make a big difference against bosses and later waves.`, true);
+
+  log(`<span class="tutorialText">👑 Bosses:</span> Bosses may resist statuses and become more dangerous at low HP. Save strong cooldowns for key moments.`, true);
+
+  setTimeout(() => {
+    tutorialLogOpen = false;
+  }, 8000);
 }
 
 function formatItemStats(item){
@@ -1617,7 +1695,10 @@ const statusEffects = {
 poison:{
   name:"Poison",
   tick(target){
-    target.hp = Math.max(0, target.hp - Math.max(2, Math.floor(target.maxHp * 0.025)));
+    let stacks = target.status?.poison?.stacks || 1;
+    let poisonDamage = Math.max(2, Math.floor(target.maxHp * 0.02 * stacks));
+
+    target.hp = Math.max(0, target.hp - poisonDamage);
   }
 },
 
@@ -1634,7 +1715,8 @@ regen:{
   tick(target){
 
     let before = target.hp;
-    let healAmount = 5;
+
+    let healAmount = Math.max(8, Math.floor(target.maxHp * 0.08));
 
     target.hp = Math.min(target.maxHp, target.hp + healAmount);
 
@@ -1668,9 +1750,10 @@ if(type === "defend"){
 
 if(type === "counter"){
   t.status.defend = {
-    duration: 1,
+    duration: 999,
     reduction: 0.50,
-    counter: true
+    counter: true,
+    expiresOnNextTurn: true
   };
   return;
 }
@@ -1682,6 +1765,21 @@ if(type === "stun" && t.bossId && Math.random() < 0.70){
 
 if(type === "poison" && t.bossId && Math.random() < 0.35){
   log(`👑 ${t.name} resists the poison!`);
+  return;
+}
+
+if(type === "poison"){
+  if(!t.status.poison){
+    t.status.poison = {
+      duration: 3,
+      stacks: 1
+    };
+  } else {
+    t.status.poison.stacks = Math.min(5, t.status.poison.stacks + 1);
+    t.status.poison.duration = 3;
+  }
+
+  log(`☠️ ${t.name} poison stacks increased to ${t.status.poison.stacks}!`);
   return;
 }
 
@@ -1702,16 +1800,54 @@ function tickStatus(t){
 
     let s = t.status[k];
 
-    // HANDLE OBJECT STATUSES (like defend)
-    if(typeof s === "object"){
-      s.duration--;
+// HANDLE OBJECT STATUSES
+if(typeof s === "object"){
 
-      if(s.duration <= 0){
-        delete t.status[k];
-      }
+  // Counter should last through ALL enemy attacks,
+  // then expire only when this hero's next turn begins.
+  if(s.expiresOnNextTurn){
+    delete t.status[k];
+    continue;
+  }
 
-      continue;
+  if(statusEffects[k]){
+    let beforeHp = t.hp;
+
+    statusEffects[k].tick(t);
+
+    let diff = t.hp - beforeHp;
+
+    if(diff > 0){
+      showFloatText(t, `+${diff}`, "heal");
     }
+    else if(diff < 0){
+      showFloatText(t, `${diff}`, "damage");
+    }
+  }
+
+  s.duration--;
+
+  if(k === "poison"){
+    log(`☠️ ${t.name} suffers poison x${s.stacks}`);
+  }
+
+  if(t.hp <= 0){
+    t.hp = 0;
+    t.dead = true;
+
+    if(enemies.includes(t)){
+      cleanupDeadEnemies();
+    }
+
+    return;
+  }
+
+  if(s.duration <= 0){
+    delete t.status[k];
+  }
+
+  continue;
+}
 
     // HANDLE NORMAL STATUSES
     if(s > 0){
@@ -1817,15 +1953,105 @@ ${storyTyping ? displayedStoryText : storyText}
 
 function showAbilityPreview(hero, ability){
 
-  el("descPanel").innerHTML = `
-    <b>${ability.name}</b><br>
-    Power: ${ability.power}<br>
-    Cooldown: ${ability.cooldown > 0 ? ability.cooldown : "Ready"}<br>
-    Target: ${ability.target}<br>
-    ${ability.apply ? `Effect: ${ability.apply}<br>` : ""}
-    <br>
-    <span style="color:#aaa;">Tap to cast.</span>
-  `;
+  let cost = getCost(hero, ability);
+  let currentCooldown = ability.cooldown > 0 ? ability.cooldown : "Ready";
+  let maxCooldown = ability.cooldownMax ?? 0;
+
+  let typeText =
+    ability.type === "physical" ? "Physical Attack" :
+    ability.type === "magic" ? "Magic Skill" :
+    ability.type === "support" ? "Support Skill" :
+    "Skill";
+
+  let targetText =
+    ability.target === "enemy" ? "Single Enemy" :
+    ability.target === "allEnemies" ? "All Enemies" :
+    ability.target === "ally" ? "Single Ally" :
+    ability.target === "allAllies" ? "All Allies" :
+    ability.target === "self" ? "Self" :
+    ability.target;
+
+  let scaleText =
+    ability.scale === "attack" ? "Attack" :
+    ability.scale === "magic" ? "Magic" :
+    ability.scale === "def" ? "Defense" :
+    ability.scale || "None";
+
+  let effectText = "";
+
+  if(ability.apply === "defend"){
+    effectText = "Applies Defend, reducing incoming damage.";
+  }
+  else if(ability.apply === "counter"){
+    effectText = "Applies Counter, reducing damage and counterattacking enemies that hit the hero.";
+  }
+  else if(ability.apply === "stun"){
+    effectText = "Can stun the target, causing them to lose their next action.";
+  }
+  else if(ability.apply === "poison"){
+    effectText = "Applies Poison. Poison stacks up to 5 times and deals stronger damage each tick.";
+  }
+  else if(ability.apply === "burn"){
+    effectText = "Applies Burn, dealing damage over time.";
+  }
+  else if(ability.apply === "regen"){
+    effectText = "Applies Regen, healing over time.";
+  }
+
+el("descPanel").innerHTML = `
+  <div style="
+    display:flex;
+    justify-content:space-between;
+    gap:18px;
+    align-items:flex-start;
+  ">
+
+    <!-- LEFT COLUMN -->
+    <div style="flex:1; min-width:0;">
+
+      <b style="font-size:16px;">${ability.name}</b><br>
+      <span style="color:#aaa;">${typeText}</span>
+
+      <hr>
+
+      <b>Power:</b> ${ability.power ?? 0}<br>
+      <b>Scaling:</b> ${scaleText}<br>
+      <b>Target:</b> ${targetText}<br>
+      <b>Cost:</b> ${cost}<br>
+      <b>Cooldown:</b> ${currentCooldown} / ${maxCooldown}<br>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div style="
+      flex:1;
+      min-width:0;
+      font-size:12px;
+      line-height:1.35;
+    ">
+
+      ${ability.defensePierce
+        ? `<b>Defense Pierce:</b> ${Math.round(ability.defensePierce * 100)}%<br><br>`
+        : ""}
+
+      ${ability.aggroTurns
+        ? `<b>Aggro:</b> Draws attacks for ${ability.aggroTurns} turns<br><br>`
+        : ""}
+
+      ${effectText
+        ? `<b>Effect</b><br>${effectText}<br><br>`
+        : ""}
+
+      <span style="color:#888;">
+        ${isMobile()
+          ? "Long-hold previews this skill."
+          : "Hover skills to preview details."}
+      </span>
+
+    </div>
+
+  </div>
+`;
 }
 
 function renderHotbar(){
@@ -1860,11 +2086,51 @@ if(playerTurn){
 }
 
 
-  let sortedHotbarAbilities = hero.abilities
+let sortedHotbarAbilities = hero.abilities
   .map((ability, ai) => ({ability, ai}))
   .sort((x, y) => {
-    const order = { physical: 1, magic: 2, support: 3 };
-    return (order[x.ability.type] || 99) - (order[y.ability.type] || 99);
+
+    function getTypeOrder(a){
+
+      // Physical attacks first
+      if(a.type === "physical"){
+        return 1;
+      }
+
+      // Magic + healing second
+      if(
+        a.type === "magic" ||
+        a.target === "ally" ||
+        a.target === "allAllies"
+      ){
+        return 2;
+      }
+
+      // Support / defense last
+      return 3;
+    }
+
+    let typeDiff =
+      getTypeOrder(x.ability) -
+      getTypeOrder(y.ability);
+
+    // Keep groups separated
+    if(typeDiff !== 0){
+      return typeDiff;
+    }
+
+    // Inside each group:
+    // lower cooldown first
+    let xCooldown = x.ability.cooldownMax ?? 0;
+    let yCooldown = y.ability.cooldownMax ?? 0;
+
+    if(xCooldown !== yCooldown){
+      return xCooldown - yCooldown;
+    }
+
+    // Tie-breaker:
+    // stronger skills first
+    return (y.ability.power || 0) - (x.ability.power || 0);
   });
 
 sortedHotbarAbilities.forEach(({ability, ai}) => {
@@ -2148,7 +2414,7 @@ guard: {
   speed: 4,
   abilities: [
     { name:"Spear Thrust", power:4, scale:"attack", target:"enemy" },
-    { name:"Shield Wall", power:0, scale:"attack", target:"self", apply:"defend", cooldownMax:3 }
+    { name:"Shield Wall", type:"support", power:0, scale:"attack", target:"self", apply:"defend", cooldownMax:3 }
   ]
 },
 
@@ -2530,7 +2796,15 @@ else if(w <= 10){
 else if(w <= 15){
 
   if(w < 15){
-    let pool = ["goblin","hobgoblin","elite_goblin","orc"];
+
+    let pool;
+
+    if(w <= 12){
+      pool = ["goblin","hobgoblin"];
+    } else {
+      pool = ["goblin","hobgoblin","elite_goblin","orc"];
+    }
+
     let count = 3 + Math.floor((w-10)/2);
 
     for(let i=0;i<count;i++){
@@ -2539,6 +2813,7 @@ else if(w <= 15){
   }
 
   if(w === 15){
+    list.push(createEnemy("goblin_king_guard", w));
     list.push(createEnemy("goblin_king", w, true));
   }
 }
@@ -2851,7 +3126,7 @@ function applyDevStart(){
       _class:"Rogue",
       level: DEV_START_WAVE - 2,
       xp:0,
-      hp:120,maxHp:120,
+      hp:135,maxHp:135,
       stamina:80,maxStamina:80,
       attack:18,def:10,magic:8,resist:8,
       speed:12,
@@ -2883,10 +3158,10 @@ function applyDevStart(){
       status:{},
       equipment:{weapon:null,armor:null,accessory:null},
       abilities:[
-        {name:"Heal",type:"support",power:24,cost:10,cooldownMax:1,cooldown:0,scale:"magic",target:"ally"},
-        {name:"Holy Light",type:"magic",power:20,cost:12,cooldownMax:2,cooldown:0,scale:"magic",target:"enemy"},
-        {name:"Regen Blessing",type:"support",power:12,cost:14,cooldownMax:4,cooldown:0,scale:"magic",apply:"regen",target:"allAllies"},
-        {name:"Prayer Guard",type:"support",power:0,cost:8,cooldownMax:3,cooldown:0,scale:"magic",apply:"defend",target:"self"}
+    {name:"Heal",type:"support",power:34,cost:10,cooldownMax:0,cooldown:0,scale:"magic",target:"ally"},
+    {name:"Holy Bolt",type:"magic",power:16,cost:8,cooldownMax:0,cooldown:0,scale:"magic",target:"enemy"},
+    {name:"Regen Blessing",type:"support",power:20,cost:14,cooldownMax:2,cooldown:0,scale:"magic",apply:"regen",target:"allAllies"},
+    {name:"Prayer Guard",type:"support",power:0,cost:8,cooldownMax:3,cooldown:0,scale:"magic",apply:"defend",target:"self"}
       ]
     });
   }
@@ -3037,9 +3312,10 @@ log(`STORY:`);
 log(`Assassins have invaded the castle.`, false);
 log(`The King is in danger.`, false);
 log(`You are a loyal Knight rushing to defend the throne.`, false);
-log(`TIPS: Use Skills (Quick Slash, Guard Break, Etc.) to fight.`, false);
+log(`<span class="tutorialText">⚔️ TIPS: Use Skills (Quick Slash, Guard Break, etc.) to fight.</span>`, false);
+
 if(window.innerWidth <= 768){
-  log(`TIPS: Click Skills to activate, Hold Skills to view more info!`, false);
+  log(`<span class="tutorialText">📱 Tap Skills to activate. Long Press/Hold Skills to view more info!</span>`, false);
 }
 }
 
@@ -3250,8 +3526,8 @@ recruit({
   level: rogueLevel,
   xp:0,
 
-  hp: scaleStat(85, rogueLevel, 0.12),
-  maxHp: scaleStat(85, rogueLevel, 0.12),
+  hp: scaleStat(95, rogueLevel, 0.12),
+  maxHp: scaleStat(95, rogueLevel, 0.12),
 
   attack: scaleStat(11, rogueLevel, 0.10),
   def: scaleStat(5, rogueLevel, 0.08),
@@ -3373,11 +3649,11 @@ recruit({
 
     equipment:{weapon:null,armor:null,accessory:null},
 abilities:[
-  {name:"Heal",type:"support",power:24,cost:10,cooldownMax:1,cooldown:0,scale:"magic",target:"ally"},
+  {name:"Heal",type:"support",power:34,cost:10,cooldownMax:0,cooldown:0,scale:"magic",target:"ally"},
   
-{name:"Holy Light",type:"magic",power:20,cost:12,cooldownMax:2,cooldown:0,scale:"magic",target:"enemy"},
+{name:"Holy Bolt",type:"magic",power:16,cost:8,cooldownMax:0,cooldown:0,scale:"magic",target:"enemy"},
   
-{name:"Regen Blessing",type:"support",power:12,cost:14,cooldownMax:4,cooldown:0,scale:"magic",apply:"regen",target:"allAllies"},
+{name:"Regen Blessing",type:"support",power:20,cost:14,cooldownMax:2,cooldown:0,scale:"magic",apply:"regen",target:"allAllies"},
   
 {name:"Prayer Guard",type:"support",power:0,cost:8,cooldownMax:2,cooldown:0,scale:"magic",apply:"defend",target:"self"}
 
@@ -3747,50 +4023,13 @@ if(
   b.classList.add("tutorialFlash");
 }
 
-    b.onmouseenter=(e)=>{
+b.onmouseenter = () => {
+  showAbilityPreview(h, a);
+};
 
-      let targetText =
-        a.target === "allEnemies" ? "Targets: All Enemies" :
-        a.target === "allAllies" ? "Targets: All Allies" :
-        a.target === "ally" ? "Targets: Single Ally" :
-        a.target === "self" ? "Targets: Self" :
-        "Targets: Single Enemy";
-
-      let dmg = a.type==="support"
-        ? `Heal: ${a.power + Math.floor(h.magic*0.6)}`
-        : `Damage: ~${a.power + h.attack + h.magic}`;
-
-      let costText = h.stamina!=null
-        ? `Stamina: ${a.stamina||0}`
-        : `MP: ${a.cost||0}`;
-
-      let cd = a.cooldown > 0
-        ? `Cooldown: ${a.cooldown} / ${a.cooldownMax}`
-        : `Cooldown: Ready`;
-
-      let effect = a.apply
-        ? `Effect: ${a.apply}`
-        : "Effect: No Effect";
-
-      showTooltip(
-`<b>${a.name}</b><br>
-${targetText}<br>
-${dmg}<br>
-${costText}<br>
-${cd}<br>
-${effect}`,
-e.pageX,
-e.pageY
-      );
-    };
-
-    b.onmousemove=(e)=>{
-      let t = el("tooltip");
-      t.style.left = e.pageX + 10 + "px";
-      t.style.top = e.pageY + 10 + "px";
-    };
-
-    b.onmouseleave=hideTooltip;
+b.onmouseleave = () => {
+  resetStoryPanel();
+};
 
     b.onclick=()=>heroAction(i,ai);
 
@@ -3907,7 +4146,7 @@ if(wave <= 2 && h._class === "Knight"){
 }
 
 let knightAnim = null;
-let knightAnimDuration = 550;
+let knightAnimDuration = 650;
 
 let royalGuardAnim = false;
 let royalGuardAnimDuration = 550;
@@ -3982,7 +4221,7 @@ if(royalGuardAnim){
   setRoyalGuardAnimation(h, a.name, royalGuardAnimDuration);
 }
 
-endTurnAfterDelay(700);
+endTurnAfterDelay(950);
 return;
 }
 
@@ -4013,7 +4252,7 @@ if(royalGuardAnim){
   setRoyalGuardAnimation(h, a.name, royalGuardAnimDuration);
 }
 
-endTurnAfterDelay(700);
+endTurnAfterDelay(950);
 return;
 }
 
@@ -4039,7 +4278,7 @@ if(a.name === "Smoke Dodge"){
 
   render();
 
-endTurnAfterDelay(700);
+endTurnAfterDelay(950);
 return;
 }
 
@@ -4069,7 +4308,7 @@ alive(heroes).forEach(t=>{
   log(`${h.name} casts Sanctuary! Poison, burn, and stun are cleansed.`);
   render();
 
-endTurnAfterDelay(700);
+endTurnAfterDelay(950);
 return;
 }
 
@@ -4133,7 +4372,7 @@ playCardAnimation(t, "damageShake");
 
 activeTurn = null;
 
-endTurnAfterDelay(700);
+endTurnAfterDelay(950);
 return;
 }
 
@@ -4145,7 +4384,8 @@ targets.forEach(t => {
 
 if(a.apply === "regen" || a.name.toLowerCase().includes("heal") || a.name.toLowerCase().includes("resurrection")){
 
-    let heal = a.power + Math.floor(h.magic * 0.6);
+    let heal = Math.floor(a.power * 1.4 + h.magic * 0.9);
+
     let beforeHp = t.hp;
 
 t.hp = Math.min(t.maxHp, t.hp + heal);
@@ -4206,7 +4446,7 @@ if(t.hp <= 0){
   }, 900);
 
   if(enemies.length === 0){
-endTurnAfterDelay(700);
+endTurnAfterDelay(950);
 return;
   }
 
@@ -4248,7 +4488,7 @@ if(royalGuardAnim){
   setRoyalGuardAnimation(h, a.name, royalGuardAnimDuration);
 }
 
-endTurnAfterDelay(700);
+endTurnAfterDelay(950);
 }
 
 function markSpawnAnimations(list){
@@ -4514,7 +4754,7 @@ if(enemies.length >= maxEnemiesThisWave){
   e.intent = skill.name;
 }
 
-if(skill.type === "support" && skill.target === "self" && skill.apply){
+if(skill.target === "self" && skill.apply){
   applyStatus(e, skill.apply);
   log(`${e.name} uses ${skill.name}!`);
   render();
@@ -5229,22 +5469,23 @@ if(h._class === "Cleric"){
       type:"support",
       power:34,
       cost:16,
-      cooldownMax:4,
+      cooldownMax:3,
       cooldown:0,
       scale:"magic",
       target:"allAllies"
     });
 
-    replaceAbility(h, "Holy Light", {
-      name:"Holy Smite",
-      type:"magic",
-      power:28,
-      cost:14,
-      cooldownMax:3,
-      cooldown:0,
-      scale:"magic",
-      target:"enemy"
-    });
+replaceAbility(h, "Holy Bolt", {
+  name:"Radiant Spear",
+  type:"magic",
+  power:26,
+  cost:12,
+  cooldownMax:2,
+  cooldown:0,
+  scale:"magic",
+  target:"enemy",
+  defensePierce:0.25
+});
 
     log(`🌟 Cleric evolved into ${h.name}!`);
   }
@@ -5263,18 +5504,18 @@ if(h._class === "Cleric"){
       type:"support",
       power:30,
       cost:20,
-      cooldownMax:5,
+      cooldownMax:3,
       cooldown:0,
       scale:"magic",
       target:"allAllies"
     });
 
-    replaceAbility(h, "Holy Smite", {
+    replaceAbility(h, "Radiant Spear", {
       name:"Divine Light",
       type:"magic",
       power:42,
       cost:22,
-      cooldownMax:5,
+      cooldownMax:3,
       cooldown:0,
       scale:"magic",
       target:"allEnemies"
@@ -5297,7 +5538,7 @@ if(h._class === "Cleric"){
       type:"support",
       power:70,
       cost:28,
-      cooldownMax:6,
+      cooldownMax:3,
       cooldown:0,
       scale:"magic",
       target:"allAllies"
@@ -5308,7 +5549,7 @@ if(h._class === "Cleric"){
       type:"magic",
       power:58,
       cost:28,
-      cooldownMax:5,
+      cooldownMax:4,
       cooldown:0,
       scale:"magic",
       target:"enemy",
