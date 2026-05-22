@@ -1,0 +1,6337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Pass Time - Game Engine</title>
+
+<style>
+html, body{
+margin:0;
+width:100%;
+height:100dvh;
+overflow:hidden;
+background:#0b0b10;
+font-family:monospace;
+color:white;
+}
+
+body{
+  display:flex;
+  flex-direction:column;
+}
+
+.screen{
+display:flex;
+justify-content:space-between;
+padding:8px 15px 6px 15px;
+height:calc(44dvh - 24px);
+overflow:hidden;
+}
+
+.side{
+  width:48%;
+  height:100%;
+  overflow-y:auto;
+  overflow-x:hidden;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+
+.card{
+  background:#1a1a25;
+  border:3px solid #444;
+  padding:3px;
+  margin-bottom:5px;
+  cursor:pointer;
+  box-sizing:border-box;
+  width:100%;
+  max-height:100%;
+  overflow:visible;
+}
+
+.enemyCard{
+background:#2a1010;
+border-color:#aa3333;
+}
+
+.screen{
+  background-image:url("sprites/castleHall_background.png");
+  background-size:cover;
+  background-position:center;
+  image-rendering:pixelated;
+}
+
+.battleUnit{
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  padding:2px;
+  min-height:118px;
+}
+
+.battleUnit{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+.battleUnit{
+  cursor:default;
+  pointer-events:none;
+}
+
+.selectableTarget{
+  pointer-events:auto;
+  cursor:pointer;
+}
+
+.selectableTarget:hover{
+  filter:brightness(1.25);
+}
+
+.unitNameLine.selectableTarget{
+  pointer-events:auto;
+}
+
+.unitSpriteWrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:84px;
+}
+
+.battleUnit.selected{
+  outline:none;
+}
+
+.battleUnit.selected .selectableTarget{
+  filter:brightness(1.25) drop-shadow(0 0 5px gold);
+}
+
+.battleUnit.selected .assassinSprite{
+  filter:brightness(1.25) drop-shadow(0 0 5px gold);
+}
+
+.battleUnit.selected .spriteClickHitbox{
+  filter:none;
+}
+
+.battleUnit.selected .unitNameLine b{
+  color:gold;
+}
+
+.spriteClickHitbox{
+  position:absolute;
+  left:38px;
+  top:28px;
+  width:52px;
+  height:72px;
+  z-index:40;
+}
+
+.unitUI{
+  position:relative;
+  z-index:80;
+  width:72px;
+  font-size:7px;
+  line-height:1;
+  text-shadow:1px 1px 2px black;
+  pointer-events:none;
+}
+
+.heroBattleUI{
+  position:absolute;
+  left:22px;
+
+  top:50%;
+  transform:translateY(100px);
+  
+  z-index:90;
+}
+
+.heroBattleUI{
+  opacity:0.75;
+  width:58px;
+}
+
+.heroBattleUI .xpBar,
+.heroBattleUI .statusIconSlot{
+  display:none;
+}
+
+.heroBattleUI.uiOpen{
+  opacity:1;
+  width:72px;
+}
+
+.heroBattleUI.uiOpen .xpBar,
+.heroBattleUI.uiOpen .statusIconSlot{
+  display:block;
+}
+
+.enemyBattleUI{
+  position:absolute;
+  top:50%;
+  transform:translate(-22px, 105px);
+  z-index:95;
+  opacity:0.75;
+  width:54px;
+}
+
+.enemyBattleUI .hpBar{
+  margin-top:1px;
+}
+
+#enemies{
+  overflow:visible;
+  position:relative;
+  z-index:5;
+}
+
+.screen{
+  overflow:visible;
+}
+
+.enemyIntentLine{
+  font-size:7px;
+  margin-bottom:1px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:58px;
+}
+
+.intentAttack{ color:#ff6666; }
+.intentDebuff{ color:#c266ff; }
+.intentDefend{ color:#66ccff; }
+.intentHeal{ color:#66ff99; }
+
+.unitNameLine{
+  white-space:nowrap;
+  font-size:7px;
+  margin-bottom:0px;
+  line-height:1;
+}
+
+.unitNameLine b{
+  font-size:8px;
+}
+
+.unitNameLine span{
+  color:gold;
+  font-size:7px;
+}
+
+.enemyStatusLine{
+  font-size:9px;
+  line-height:1;
+  margin-top:1px;
+  white-space:nowrap;
+}
+
+.unitUI .hpBar,
+.unitUI .xpBar{
+  height:3px;
+  margin-top:0px;
+  border-width:1px;
+}
+
+.heroUnit,
+.enemyUnit{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  position:relative;
+}
+
+.enemyUnit{
+  align-items:flex-end;
+}
+
+.unitSpriteWrap,
+.knightSprite,
+.royalGuardSprite,
+.rogueSprite,
+.assassinSprite{
+  position:relative;
+  z-index:20;
+}
+
+.enemyUnit{
+  text-align:right;
+}
+
+
+.enemyUnit .unitUI{
+  margin-left:0;
+  text-align:right;
+}
+
+.card.dead{
+opacity:0.45;
+filter:grayscale(100%);
+background:#222;
+border-color:#666;
+cursor:default;
+}
+
+.menu{
+height:calc(56dvh - 32px);
+background:#07070c;
+border-top:4px solid #333;
+padding:6px 10px 10px 10px;
+display:flex;
+flex-direction:column;
+gap:6px;
+overflow:hidden;
+}
+
+.menuRow{
+display:flex;
+gap:15px;
+flex:1;
+min-height:0;
+}
+
+.panelHero,.panelAbilities,.panelDesc{
+background:#111;
+border:3px solid #444;
+padding:8px;
+overflow-y:auto;
+overflow-x:hidden;
+}
+
+.panelHero{width:25%;}
+.panelAbilities{width:35%;}
+.panelDesc{flex:1;}
+
+.log{
+background:black;
+border:2px solid #444;
+padding:6px;
+height:150px;
+overflow-y:auto;
+cursor:pointer;
+}
+
+@keyframes buttonFlash {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.97); filter: brightness(1.4); }
+  100% { transform: scale(1); }
+}
+
+button:active {
+  animation: buttonFlash 0.12s ease;
+}
+
+button {
+  background:#2d2dff;
+  border:none;
+  padding:6px;
+  color:white;
+  margin:3px;
+  cursor:pointer;
+  transition: transform 0.08s ease, filter 0.08s ease, box-shadow 0.08s ease;
+  box-shadow: 0 3px 0 #1a1a80;
+}
+
+button:hover {
+  filter: brightness(1.2);
+}
+
+button:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #1a1a80;
+  filter: brightness(0.9);
+}
+
+
+button:disabled{opacity:0.4;}
+
+@keyframes tutorialSkillFlash{
+  0%{
+    box-shadow:0 0 4px gold;
+    filter:brightness(1);
+  }
+  50%{
+    box-shadow:0 0 16px gold;
+    filter:brightness(1.55);
+  }
+  100%{
+    box-shadow:0 0 4px gold;
+    filter:brightness(1);
+  }
+}
+
+@keyframes tutorialTextPulse{
+  0%{
+    color:#ffd54a;
+    text-shadow:0 0 3px rgba(255,215,64,0.35);
+  }
+
+  50%{
+    color:#fff0a0;
+    text-shadow:
+      0 0 6px rgba(255,215,64,0.65),
+      0 0 12px rgba(255,215,64,0.35);
+  }
+
+  100%{
+    color:#ffd54a;
+    text-shadow:0 0 3px rgba(255,215,64,0.35);
+  }
+}
+
+.tutorialFlash{
+  animation:tutorialSkillFlash 0.8s infinite;
+  border:2px solid gold !important;
+}
+
+.tutorialText{
+  color:#ffd54a;
+  font-weight:bold;
+  animation:tutorialTextPulse 1.8s ease-in-out infinite;
+}
+
+.xpBar{
+width:100%;
+height:8px;
+background:#222;
+border:1px solid #555;
+margin-top:4px;
+}
+
+.xpFill{
+height:100%;
+background:deepskyblue;
+width:0%;
+transition:width 0.5s ease;
+}
+
+.turnActive{
+border-color:yellow;
+transform:scale(1.08);
+box-shadow:0 0 12px yellow;
+}
+
+.card{
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease,
+    filter 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.card.damageShake{
+  animation:damageShake 0.28s ease;
+}
+
+.card.attackBump{
+  animation:attackBump 0.22s ease;
+}
+
+@keyframes damageShake{
+  0%{ transform:translateX(0); }
+  25%{ transform:translateX(-4px); }
+  50%{ transform:translateX(4px); }
+  75%{ transform:translateX(-3px); }
+  100%{ transform:translateX(0); }
+}
+
+@keyframes attackBump{
+  0%{ transform:scale(1); }
+  50%{ transform:scale(1.015) translateY(-2px); }
+  100%{ transform:scale(1); }
+}
+
+.selected:not(.battleUnit) {
+  border: 3px solid gold !important;
+  transform: scale(1.00);
+  box-shadow: 0 0 5px gold;
+}
+
+.selected b {
+  color: gold;
+  font-weight: 900;
+}
+
+.cardTop{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  margin-bottom:2px;
+}
+
+.resourceText{
+  font-size:12px;
+  font-weight:bold;
+  color:white;
+}
+
+.statusIconSlot{
+  display:inline-block;
+  min-width:46px;
+  height:16px;
+  line-height:16px;
+  vertical-align:top;
+  white-space:nowrap;
+}
+
+.skillAttack{
+  background:#8b1e1e;
+  box-shadow:0 3px 0 #4a0f0f;
+}
+
+.skillMagic{
+  background:#6a2dbd;
+  box-shadow:0 3px 0 #34145e;
+}
+
+.skillSupport{
+  background:#228b22;
+  box-shadow:0 3px 0 #145214;
+}
+
+.knightSprite{
+  width:128px;
+  height:128px;
+
+  background-image:url("sprites/knight_attack.png");
+  background-repeat:no-repeat;
+  background-size:512px 128px;
+  image-rendering:pixelated;
+
+  margin-left:-18px;
+  margin-top:-20px;
+  margin-bottom:-48px;
+}
+
+.royalGuardSprite{
+  width:128px;
+  height:128px;
+
+  background-image:url("sprites/royalGuard_spear.png");
+  background-repeat:no-repeat;
+  background-size:512px 128px;
+  background-position:0px 0px;
+  image-rendering:pixelated;
+
+  margin-left:-18px;
+  margin-top:-20px;
+  margin-bottom:-48px;
+
+}
+
+.rogueSprite,
+.assassinSprite{
+  width:128px;
+  height:128px;
+
+  background-repeat:no-repeat;
+  background-size:512px 128px;
+  background-position:0px 0px;
+  image-rendering:pixelated;
+
+  margin-left:-18px;
+  margin-top:-20px;
+  margin-bottom:-48px;
+}
+
+#knightSprite{
+  transform:translate(0px, -6px);
+}
+
+
+/* IDLE FRAME */
+.knightIdle{
+  background-position:0px 0px;
+}
+
+/* PLAY 4-FRAME ATTACK */
+.knightAttack{}
+.knightQuickAttack{}
+.knightShield{}
+.knightShieldBash{}
+
+
+.summonedEnemy{
+  animation:summonPop 0.45s cubic-bezier(0.16, 1, 0.3, 1) 1;
+  transform-origin:center;
+}
+
+.heroSpawn{
+  animation:summonPop 0.45s cubic-bezier(0.16, 1, 0.3, 1) 1;
+  transform-origin:center;
+}
+
+.bossSpawn{
+  animation:bossSpawnPop 1.25s cubic-bezier(0.16, 1, 0.3, 1) 1;
+  transform-origin:center;
+}
+
+.bossSpawn b{
+  animation:bossTextFlash 1.25s ease 1;
+}
+
+@keyframes bossTextFlash{
+  0%{ color:gold; }
+  70%{ color:gold; }
+  100%{ color:white; }
+}
+
+@keyframes bossSpawnPop{
+  0%{
+    opacity:0;
+    transform:scale(0.72) translateY(-16px);
+    filter:brightness(2.5) blur(3px);
+  }
+  45%{
+    opacity:1;
+    transform:scale(1.12) translateY(0);
+    filter:brightness(1.8) blur(0px);
+  }
+  75%{
+    transform:scale(0.97);
+    filter:brightness(1.25);
+  }
+  100%{
+    opacity:1;
+    transform:scale(1);
+    filter:brightness(1);
+  }
+}
+
+@keyframes summonPop{
+  0%{
+    opacity:0;
+    transform:scale(0.96) translateY(-3px);
+    filter:brightness(1.25);
+  }
+
+  45%{
+    opacity:1;
+    transform:scale(1.01) translateY(0);
+    filter:brightness(1.1);
+  }
+
+  100%{
+    opacity:1;
+    transform:scale(1);
+    filter:brightness(1);
+  }
+}
+
+.floatText{
+  position:absolute;
+  font-weight:bold;
+  font-size:18px;
+  pointer-events:none;
+  animation:floatUp 0.8s ease-out forwards;
+  z-index:999;
+  text-shadow:2px 2px 2px black;
+}
+
+.floatDamage{ color:red; }
+.floatHeal{ color:limegreen; }
+.floatCrit{ color:gold; }
+
+@keyframes floatUp{
+  0%{ opacity:1; transform:translateY(0); }
+  100%{ opacity:0; transform:translateY(-35px); }
+}
+
+/* ================= TOOLTIP ================= */
+#tooltip{
+position:fixed;
+background:#111;
+border:2px solid #555;
+padding:8px;
+color:white;
+font-size:12px;
+pointer-events:none;
+display:none;
+max-width:220px;
+z-index:999;
+}
+
+/* ================= HP BAR ================= */
+.hpBar{
+width:100%;
+height:8px;
+background:#333;
+border:1px solid #555;
+margin-top:4px;
+}
+
+.hpFill{
+height:100%;
+background:limegreen;
+width:100%;
+transition:width 0.2s ease;
+}
+
+/* ================= TURN BAR ================= */
+
+#turnBar{
+display:flex;
+gap:6px;
+padding:5px 8px;
+background:#05050a;
+border-bottom:3px solid #333;
+overflow-x:auto;
+}
+
+.turnIcon{
+min-width:82px;
+padding:4px;
+background:#222;
+border:2px solid #555;
+text-align:center;
+border-radius:8px;
+font-size:11px;
+line-height:1.05;
+}
+
+.turnHero{
+border-color:deepskyblue;
+}
+
+.turnEnemy{
+border-color:crimson;
+}
+
+#combatHotbar{
+  display:none;
+}
+
+/* ================= MOBILE / IPHONE PORTRAIT LAYOUT ================= */
+
+html, body{
+  width:100%;
+  min-height:100%;
+  overflow-x:hidden;
+  -webkit-text-size-adjust:100%;
+  touch-action:manipulation;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+@media (max-width: 768px){
+
+  body{
+    font-size:13px;
+  }
+
+#turnBar{
+  position:sticky;
+  top:0;
+  z-index:50;
+
+  gap:3px;
+  padding:3px 4px;
+
+  max-height:42px;
+
+  overflow-x:auto;
+  overflow-y:hidden;
+
+  -webkit-overflow-scrolling:touch;
+}
+
+.turnIcon{
+  min-width:52px;
+
+  font-size:8px;
+  line-height:1.05;
+
+  padding:2px 3px;
+
+  border-width:1px;
+
+  border-radius:5px;
+}
+
+  /* BATTLEFIELD: keep heroes/enemies side by side */
+.screen{
+  display:grid;
+  grid-template-columns:1.25fr 0.75fr;
+  height:42dvh;
+  padding:6px;
+  gap:6px;
+  overflow:visible;
+}
+
+.side{
+  width:100%;
+  height:100%;
+  min-height:0;
+
+  overflow-y:auto;
+  overflow-x:hidden;
+
+  -webkit-overflow-scrolling:touch;
+
+  gap:4px;
+}
+
+	#party{
+  max-height:100%;
+}
+
+  .card{
+    font-size:10px;
+    padding:3px;
+    margin-bottom:2px;
+  }
+
+  .cardTop{
+    gap:4px;
+  }
+
+  .resourceText{
+    font-size:10px;
+  }
+
+.hpBar,
+.xpBar{
+  height:5px;
+  margin-top:2px;
+}
+
+  /* MENU AREA */
+.menu{
+  flex:1;
+  min-height:0;
+  padding:4px 6px 6px 6px;
+  gap:4px;
+  overflow:hidden;
+}
+
+.menuRow{
+  display:grid;
+  grid-template-columns:1fr;
+  grid-template-areas:
+    "hero"
+    "hotbar"
+    "desc";
+  flex:1;
+  min-height:0;
+  gap:4px;
+}
+
+.panelHero{
+  grid-area:hero;
+  width:100%;
+  height:auto;
+  max-height:96px;
+  min-height:84px;
+  padding:4px 6px;
+  font-size:10px;
+  line-height:1.05;
+  overflow:hidden;
+}
+
+.heroUiLine{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.heroUiSmall{
+  font-size:9px;
+  line-height:1.05;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.heroUiSection{
+  margin-top:2px;
+}
+
+.heroCompactTop{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:8px;
+}
+
+.heroCompactName{
+  flex:0 0 auto;
+  font-size:11px;
+}
+
+.heroCompactInfo{
+  flex:1;
+  text-align:right;
+  font-size:9px;
+  color:#bbb;
+  line-height:1.15;
+}
+
+.heroCompactBonus{
+  margin-top:2px;
+  font-size:9px;
+  color:#8fd;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.heroCompactVitals{
+  margin-top:3px;
+}
+
+.panelAbilities{
+  display:none;
+}
+
+.panelDesc{
+  grid-area:desc;
+  width:100%;
+  max-height:20vh;
+  min-height:90px;
+  padding:6px;
+  font-size:12px;
+}
+
+  .panelAbilities button{
+    width:100%;
+  }
+
+  button{
+    min-height:42px;
+    font-size:14px;
+    padding:8px;
+    margin:3px 0;
+  }
+
+.log{
+  height:74px;
+  font-size:11px;
+}
+
+.knightSprite{
+  width:128px;
+  height:128px;
+
+  background-size:512px 128px;
+
+  margin-left:-18px;
+  margin-top:-20px;
+  margin-bottom:-52px;
+}
+
+.royalGuardSprite{
+  width:128px;
+  height:128px;
+
+  background-size:512px 128px;
+
+  margin-left:-18px;
+  margin-top:-20px;
+  margin-bottom:-52px;
+
+  position:relative;
+  z-index:30;
+  transform:translate(0px, -35px);
+}
+
+  .screen{
+    overflow:visible;
+  }
+
+#party{
+  overflow:visible;
+  position:relative;
+  z-index:5;
+  padding-right:0;
+}
+
+  #enemies{
+    position:relative;
+    z-index:1;
+  }
+
+  #party .card{
+    overflow:visible;
+    position:relative;
+    z-index:10;
+  }
+
+#knightSprite{
+  position:relative;
+  z-index:30;
+  transform:translate(0px, -35px);
+}
+
+#combatHotbar{
+  grid-area:hotbar;
+
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:4px;
+
+  padding:4px;
+
+  background:#05050a;
+  border:2px solid #333;
+}
+
+.hotbarBtn{
+  position:relative;
+  min-height:46px;
+  margin:0;
+  padding:4px 2px;
+  font-size:10px;
+  line-height:1.05;
+  border:2px solid #555;
+  border-radius:8px;
+  background:#222;
+  color:white;
+  box-shadow:none;
+  overflow:hidden;
+
+  user-select:none;
+  -webkit-user-select:none;
+  -webkit-touch-callout:none;
+}
+
+.hotbarBtn.locked{
+  opacity:0.45;
+  filter:grayscale(100%);
+}
+
+#combatHotbar.inactive{
+  opacity:0.72;
+  filter:brightness(0.8);
+  transition:opacity 0.15s ease, filter 0.15s ease;
+}
+
+.hotbarBtn.skillAttack{
+  background:#8b1e1e;
+  box-shadow:0 3px 0 #4a0f0f;
+}
+
+.hotbarBtn.skillMagic{
+  background:#6a2dbd;
+  box-shadow:0 3px 0 #34145e;
+}
+
+.hotbarBtn.skillSupport{
+  background:#228b22;
+  box-shadow:0 3px 0 #145214;
+}
+
+.hotbarCost{
+  display:block;
+  margin-top:3px;
+  font-size:8px;
+  color:#ccc;
+}
+
+.cooldownOverlay{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,0.65);
+  color:white;
+  font-size:24px;
+  font-weight:bold;
+}
+
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="turnBar"></div>
+<div class="screen">
+<div class="side" id="party"></div>
+<div class="side" id="enemies"></div>
+</div>
+
+<div class="menu">
+<div class="menuRow">
+<div class="panelHero" id="heroPanel"></div>
+<div id="combatHotbar"></div>
+<div class="panelAbilities" id="abilityPanel"></div>
+<div class="panelDesc" id="descPanel"></div>
+</div>
+<div class="log" id="log" onclick="showFullTutorialLog()" title="Click for extended tutorial">
+  <div style="
+    color:#888;
+    font-size:11px;
+    text-align:center;
+    padding-bottom:4px;
+  ">
+    Click for extended tutorial
+  </div>
+</div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+
+/* ================= STATE ================= */
+
+let DEV_START_WAVE = 1; // WAVE SET
+let DEV_MODE = DEV_START_WAVE > 1;
+
+let wave = DEV_START_WAVE;
+
+let selectedEnemy = null;
+let selectedAlly = null;
+
+let backpack = [];
+
+let currentHeroIndex = 0;
+
+let storyEventsTriggered = {};
+
+let waveHandled = false;
+
+let animationPlaying = false;
+
+let knightAnimTimer = null;
+
+let royalGuardAnimTimers = {};
+
+let maxEnemiesThisWave = 5;
+
+let turnQueue = [];
+let turnIndex = 0;
+
+let activeTurn = null;
+
+let knightTutorialSkillsUsed = {};
+
+let unitAnimIdCounter = 1;
+
+const unitPositions = {
+  Knight:{
+    x:20,
+    y:85,
+    uiX:55,
+    uiY:70
+  },
+
+  RoyalGuard:{
+    default:{ x:20, y:90, uiX:22, uiY:72 },
+
+    1:{ x:-25, y:0, uiX:10, uiY:-25 },
+    2:{ x:-25, y:-175, uiX:10, uiY:-200 },
+    3:{ x:20, y:-225, uiX:55, uiY:-250 }
+  }
+};
+
+function getUnitPosition(unit, partyIndex){
+  return unitPositions[unit._class]?.[partyIndex]
+    || unitPositions[unit._class]
+    || unitPositions.RoyalGuard[partyIndex]
+    || { x:0, y:0, uiX:22, uiY:72 };
+}
+
+function getUnitTransform(unit){
+  let partyIndex = heroes.indexOf(unit);
+  let pos = getUnitPosition(unit, partyIndex);
+  return `translate(${pos.x}px, ${pos.y}px)`;
+}
+
+function getEnemyPosition(enemyIndex){
+
+  // Base stagger pattern
+  let pattern = [
+    { x:-20, y:85,  uiX:-55, uiY:70 },
+    { x:25,  y:0,   uiX:-10, uiY:-25 },
+    { x:25,  y:-175,uiX:-10, uiY:-200 },
+    { x:-20, y:-225,uiX:-55, uiY:-250 }
+  ];
+
+  // Which stagger slot
+  let slot = pattern[enemyIndex % pattern.length];
+
+  // Every full row shifts downward slightly
+  let row = Math.floor(enemyIndex / pattern.length);
+
+  return {
+    x: slot.x + (row * 18),
+    y: slot.y + (row * 110),
+
+    uiX: slot.uiX + (row * 18),
+    uiY: slot.uiY + (row * 110)
+  };
+}
+
+function getEnemyTransform(enemy){
+  let enemyIndex = enemies.indexOf(enemy);
+  let pos = getEnemyPosition(enemyIndex);
+  return `translate(${pos.x}px, ${pos.y}px)`;
+}
+
+function assignUnitAnimId(unit){
+  if(unit && !unit.animId){
+    unit.animId = unitAnimIdCounter++;
+  }
+  return unit;
+}
+
+let storyText = `
+<p>You rush to stop assassins from killing the King.</p>
+
+Blood stains the halls as defenders fall around you.
+
+<p>The castle is under attack.</p>
+`;
+
+let displayedStoryText = "";
+let storyTyping = false;
+let storyTypeId = 0;
+
+
+/* ================= UTILS ================= */
+
+function el(id){return document.getElementById(id);}
+function d20(){return Math.floor(Math.random()*20)+1;}
+
+function showFloatText(entity, text, type="damage"){
+
+  let ui = [...document.querySelectorAll(".unitUI")]
+    .find(u => u.dataset.animId === String(entity.animId));
+
+  if(!ui) return;
+
+  let rect = ui.getBoundingClientRect();
+
+  let div = document.createElement("div");
+
+  div.className = `floatText ${
+    type === "heal" ? "floatHeal" :
+    type === "crit" ? "floatCrit" :
+    "floatDamage"
+  }`;
+
+  div.innerText = text;
+div.style.left = rect.left + rect.width / 2 + "px";
+div.style.top = rect.top - 6 + "px";
+
+  document.body.appendChild(div);
+
+  setTimeout(()=>div.remove(), 800);
+}
+
+function playCardAnimation(entity, className){
+
+  if(!entity) return;
+
+  setTimeout(() => {
+
+    let cards = document.querySelectorAll(".card");
+
+let card = [...cards].find(c =>
+  c.dataset.animId === String(entity.animId)
+);
+
+    if(!card) return;
+
+    card.classList.remove(className);
+    void card.offsetWidth;
+    card.classList.add(className);
+
+    setTimeout(() => {
+      card.classList.remove(className);
+    }, 320);
+
+  }, 0);
+}
+
+function getInitiative(entity, wave) {
+  let init = d20() + entity.speed;
+
+  if (wave <= 3 && entity._class === "Knight") {
+    init += 10;
+  }
+
+  return init;
+}
+
+function getDashTransform(fromEntity, toEntity, baseTransform, maxDash = 175){
+  if(!fromEntity || !toEntity) return baseTransform;
+
+  let fromCard = [...document.querySelectorAll(".card")]
+    .find(c => c.dataset.animId === String(fromEntity.animId));
+
+  let toCard = [...document.querySelectorAll(".card")]
+    .find(c => c.dataset.animId === String(toEntity.animId));
+
+  if(!fromCard || !toCard) return baseTransform;
+
+  let fromRect = fromCard.getBoundingClientRect();
+  let toRect = toCard.getBoundingClientRect();
+
+  let dx = (toRect.left + toRect.width / 2) - (fromRect.left + fromRect.width / 2);
+  let dy = (toRect.top + toRect.height / 2) - (fromRect.top + fromRect.height / 2);
+
+  dx = Math.max(-maxDash, Math.min(maxDash, dx * 1.55));
+  dy = Math.max(-35, Math.min(35, dy * 0.25));
+
+  return `${baseTransform} translate(${dx}px, ${dy}px)`;
+}
+
+function setKnightAnimation(animClass, duration = 400, target = null){
+
+  let sprite = document.querySelector("#party #knightSprite");
+  if(!sprite) return;
+
+  animationPlaying = true;
+
+  if(knightAnimTimer){
+    clearInterval(knightAnimTimer);
+    knightAnimTimer = null;
+  }
+
+let knight = heroes.find(h => h._class === "Knight");
+let placedTransform = getUnitTransform(knight);
+
+let sheet = "sprites/knight_attack.png";
+let moveStart = placedTransform;
+let moveEnd = placedTransform;
+
+if(
+  animClass === "knightQuickAttack" ||
+  animClass === "knightAttack" ||
+  animClass === "knightShieldBash"
+){
+  moveEnd = getDashTransform(knight, target, placedTransform);
+}
+
+if(animClass === "knightShield"){
+  sheet = "sprites/knight_shield.png";
+}
+else if(animClass === "knightQuickAttack"){
+  sheet = "sprites/knight_quickAttack.png";
+}
+else if(animClass === "knightShieldBash"){
+  sheet = "sprites/knight_shieldBash.png";
+}
+
+  sprite.style.backgroundImage = `url("${sheet}")`;
+  sprite.style.backgroundSize = "512px 128px";
+  sprite.style.backgroundRepeat = "no-repeat";
+  sprite.style.backgroundPosition = "0px 0px";
+  sprite.style.transform = moveStart;
+
+  let frames = ["0px 0px", "-128px 0px", "-256px 0px", "-384px 0px"];
+  let frame = 0;
+  let frameTime = duration / frames.length;
+
+  knightAnimTimer = setInterval(() => {
+    sprite.style.backgroundPosition = frames[frame];
+
+    if(frame >= 1){
+  sprite.style.transform = moveEnd;
+}
+
+    frame++;
+
+    if(frame >= frames.length){
+      clearInterval(knightAnimTimer);
+
+      setTimeout(() => {
+        sprite.style.backgroundImage = `url("sprites/knight_attack.png")`;
+        sprite.style.backgroundSize = "512px 128px";
+        sprite.style.backgroundPosition = "0px 0px";
+sprite.style.transform = placedTransform;
+        animationPlaying = false;
+        knightAnimTimer = null;
+      }, frameTime);
+    }
+  }, frameTime);
+}
+
+function setRoyalGuardAnimation(guard, abilityName, duration = 400, target = null){
+
+  if(!guard) return;
+
+  let sprite = document.querySelector(
+    `#party .royalGuardSprite[data-anim-id="${guard.animId}"]`
+  );
+
+  if(!sprite) return;
+
+  animationPlaying = true;
+
+  if(royalGuardAnimTimers[guard.animId]){
+    clearInterval(royalGuardAnimTimers[guard.animId]);
+  }
+
+let guardTransform = getUnitTransform(guard);
+let sheet;
+
+let moveEnd = guardTransform;
+
+if(abilityName && abilityName.trim() !== "Shield Wall"){
+  moveEnd = getDashTransform(guard, target, guardTransform);
+}
+
+if(abilityName && abilityName.trim() === "Shield Wall"){
+  sheet = "sprites/royalGuard_shield.png";
+}
+else{
+  sheet = "sprites/royalGuard_spear.png";
+}
+
+  sprite.style.backgroundImage = `url("${sheet}")`;
+  sprite.style.backgroundSize = "512px 128px";
+  sprite.style.backgroundRepeat = "no-repeat";
+  sprite.style.backgroundPosition = "0px 0px";
+  sprite.style.transform = guardTransform;
+
+  let frames = ["0px 0px", "-128px 0px", "-256px 0px", "-384px 0px"];
+  let frame = 0;
+  let frameTime = duration / frames.length;
+
+  royalGuardAnimTimers[guard.animId] = setInterval(() => {
+    sprite.style.backgroundPosition = frames[frame];
+
+if(frame >= 1){
+  sprite.style.transform = moveEnd;
+}
+    frame++;
+
+    if(frame >= frames.length){
+      clearInterval(royalGuardAnimTimers[guard.animId]);
+
+      setTimeout(() => {
+sprite.style.backgroundImage = `url("sprites/royalGuard_spear.png")`;
+sprite.style.backgroundSize = "512px 128px";
+sprite.style.backgroundPosition = "0px 0px";
+sprite.style.transform = guardTransform;
+royalGuardAnimTimers[guard.animId] = null;
+        animationPlaying = false;
+      }, frameTime);
+    }
+  }, frameTime);
+}
+
+function setRogueAnimation(
+  rogue,
+  skillName,
+  duration = 250,
+  target = null
+){
+
+  if(!rogue) return;
+
+  let sprite = document.querySelector(
+    `#party .rogueSprite[data-anim-id="${rogue.animId}"]`
+  );
+
+  if(!sprite) return;
+
+  animationPlaying = true;
+
+  let placedTransform = getUnitTransform(rogue);
+
+let moveStart = placedTransform;
+let moveEnd = placedTransform;
+
+if(skillName === "Backstab"){
+  moveEnd = getDashTransform(
+    rogue,
+    target,
+    placedTransform,
+    420
+  );
+}
+else{
+  moveEnd = getDashTransform(
+    rogue,
+    target,
+    placedTransform,
+    175
+  );
+}
+
+  sprite.style.backgroundImage = `url("sprites/rogue_quickAttack.png")`;
+  sprite.style.backgroundSize = "512px 128px";
+  sprite.style.backgroundRepeat = "no-repeat";
+
+if(skillName === "Backstab"){
+  sprite.style.transform =
+    moveStart + " scaleX(-1)";
+}
+else{
+  sprite.style.transform = moveStart;
+}
+
+  sprite.style.transform = placedTransform;
+
+  let frames = ["0px 0px", "-128px 0px", "-256px 0px", "-384px 0px"];
+  let frame = 0;
+  let frameTime = duration / frames.length;
+
+  let timer = setInterval(() => {
+    sprite.style.backgroundPosition = frames[frame];
+if(frame >= 1){
+
+  if(skillName === "Backstab"){
+    sprite.style.transform =
+      moveEnd + " scaleX(-1)";
+  }
+  else{
+    sprite.style.transform = moveEnd;
+  }
+}
+    frame++;
+
+    if(frame >= frames.length){
+      clearInterval(timer);
+
+      setTimeout(() => {
+        sprite.style.backgroundPosition = "0px 0px";
+        sprite.style.transform = placedTransform;
+sprite.style.scale = "";
+        animationPlaying = false;
+      }, frameTime);
+    }
+  }, frameTime);
+}
+
+function setAssassinAnimation(enemy, skillName, duration = 300, target = null){
+  if(!enemy) return;
+
+  let sprite = document.querySelector(
+    `#enemies .assassinSprite[data-anim-id="${enemy.animId}"]`
+  );
+
+  if(!sprite) return;
+
+  animationPlaying = true;
+
+  let placedTransform = getEnemyTransform(enemy);
+let moveStart = placedTransform;
+let moveEnd = getDashTransform(enemy, target, placedTransform);
+
+  let sheet = skillName === "Poison Blade"
+    ? "sprites/assassin_poisonAttack.png"
+    : "sprites/assassin_quickAttack.png";
+
+  sprite.style.backgroundImage = `url("${sheet}")`;
+  sprite.style.backgroundSize = "512px 128px";
+  sprite.style.backgroundRepeat = "no-repeat";
+  sprite.style.transform = moveStart;
+
+  let frames = ["0px 0px", "-128px 0px", "-256px 0px", "-384px 0px"];
+  let frame = 0;
+  let frameTime = duration / frames.length;
+
+  let timer = setInterval(() => {
+    sprite.style.backgroundPosition = frames[frame];
+    frame++;
+
+if(frame >= 1){
+  sprite.style.transform = moveEnd;
+}
+
+    if(frame >= frames.length){
+      clearInterval(timer);
+
+      setTimeout(() => {
+        sprite.style.backgroundImage = `url("sprites/assassin_quickAttack.png")`;
+        sprite.style.backgroundPosition = "0px 0px";
+        sprite.style.transform = placedTransform;
+        animationPlaying = false;
+      }, frameTime);
+    }
+  }, frameTime);
+}
+
+function waitForAnimationThenNextTurn(){
+
+  if(animationPlaying){
+    setTimeout(waitForAnimationThenNextTurn, 50);
+    return;
+  }
+
+  nextTurn();
+}
+
+function endTurnAfterDelay(delay = 350){
+  activeTurn = null;
+
+  setTimeout(() => {
+    waitForAnimationThenNextTurn();
+  }, delay);
+}
+
+function getRarity(item){
+  return item?.rarity || "common";
+}
+
+function getItemScoreForHero(hero, item){
+  if(!item || !item.stats) return 0;
+
+  let weights = {
+    attack:1,
+    def:1,
+    magic:1,
+    resist:1,
+    hp:0.5,
+    speed:0.8,
+    critRate:12,
+    critMult:8
+  };
+
+  if(hero._class === "Knight"){
+    weights.attack = 1.3;
+    weights.def = 1.4;
+    weights.resist = 1.1;
+    weights.hp = 0.8;
+  }
+
+  if(hero._class === "Rogue"){
+    weights.attack = 1.4;
+    weights.speed = 1.4;
+    weights.critRate = 18;
+    weights.critMult = 12;
+  }
+
+  if(hero._class === "Cleric"){
+    weights.magic = 1.5;
+    weights.resist = 1.3;
+    weights.def = 1.1;
+    weights.mp = 0.8;
+  }
+
+  if(hero._class === "Mage"){
+    weights.magic = 1.8;
+    weights.mp = 1;
+    weights.resist = 1.1;
+    weights.critRate = 14;
+  }
+
+  let score = 0;
+
+  for(let stat in item.stats){
+    score += item.stats[stat] * (weights[stat] || 0);
+  }
+
+  score += (rarityRank[item.rarity] || 1) * 0.25;
+
+  return score;
+}
+
+function shouldEquipForHero(hero, newItem){
+  if(!hero || !newItem) return false;
+
+  let slot = newItem.slot;
+  let currentItem = hero.equipment?.[slot];
+
+  if(!currentItem) return true;
+
+  return getItemScoreForHero(hero, newItem) > getItemScoreForHero(hero, currentItem);
+}
+
+function rarityColor(r){
+  if(r === "legendary") return "violet";
+  if(r === "rare") return "deepskyblue";
+  if(r === "uncommon") return "limegreen";
+  if(r === "common") return "white";
+}
+
+function showBackpack(){
+  let ab = el("abilityPanel");
+  let desc = el("descPanel");
+
+  ab.innerHTML = `
+    <b style="font-size:16px;">Backpack</b>
+    <hr>
+  `;
+
+if(backpack.length === 0){
+  ab.innerHTML += `No legendary items stored.<br><br>`;
+
+  let backBtn = document.createElement("button");
+  backBtn.innerText = "⬅ Back";
+  backBtn.onclick = () => showHero(currentHeroIndex);
+
+  ab.appendChild(backBtn);
+  return;
+}
+
+  backpack.forEach((item, index) => {
+    let b = document.createElement("button");
+    b.innerText = item.name;
+
+    b.onclick = () => {
+let heroButtons = alive(heroes)
+  .filter(hero => hero._class !== "RoyalGuard")
+  .map((hero, heroIndex) => {
+    let realIndex = heroes.indexOf(hero);
+    return `<button onclick="equipBackpackItemToHero(${index}, ${realIndex})">
+      Equip to ${hero.name}
+    </button>`;
+  })
+  .join("<br>");
+
+desc.innerHTML = `
+  <b style="color:${rarityColor(item.rarity)}">${item.name}</b><br>
+  Slot: ${item.slot}<br>
+  Rarity: ${item.rarity}<br>
+  Stats: ${formatItemStats(item)}<br><br>
+  ${heroButtons}
+`;
+    };
+
+    ab.appendChild(b);
+  });
+
+ab.innerHTML += `<hr>`;
+
+let backBtn = document.createElement("button");
+backBtn.innerText = "⬅ Back";
+backBtn.onclick = () => showHero(currentHeroIndex);
+
+ab.appendChild(backBtn);
+
+}
+
+function equipBackpackItem(index){
+  let item = backpack[index];
+  if(!item) return;
+
+  let equipped = tryPartyEquipItem(item);
+
+  if(equipped){
+    backpack.splice(index, 1);
+    log(`🎒 ${item.name} removed from Backpack.`);
+  }
+
+  render();
+}
+
+function equipBackpackItemToHero(itemIndex, heroIndex){
+  let item = backpack[itemIndex];
+  let hero = heroes[heroIndex];
+
+  if(!item || !hero || hero.hp <= 0) return;
+
+  if(hero._class === "RoyalGuard") return;
+
+  if(!hero.equipment){
+    hero.equipment = {weapon:null, armor:null, accessory:null};
+  }
+
+  let oldItem = hero.equipment[item.slot];
+
+  hero.equipment[item.slot] = item;
+  applyEquipmentStats(hero);
+
+  backpack.splice(itemIndex, 1);
+
+  if(oldItem && oldItem.rarity === "legendary"){
+    backpack.push(oldItem);
+    log(`🎒 ${oldItem.name} was moved to the Backpack.`);
+  }
+
+  log(`⬆️ ${hero.name} equips ${item.name} (${item.slot})`);
+
+  render();
+  showHero(heroIndex);
+}
+
+
+// LOG SPEED //
+let logQueue = [];
+let typing = false;
+
+let skipLogTyping = false;
+
+let skipAllLogs = false;
+
+function log(t, instant = true){
+  if(instant){
+    let box = el("log");
+    let line = document.createElement("div");
+    line.innerHTML = t;
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+
+    // prevent infinite log buildup
+while(box.children.length > 80){
+  if(box.firstChild?.dataset?.permanent){
+    break;
+  }
+  box.removeChild(box.firstChild);
+}
+
+    return;
+  }
+
+  logQueue.push(t);
+  if(!typing) typeNextLog();
+}
+
+function typeNextLog(){
+
+  if(skipAllLogs){
+    let box = el("log");
+
+    while(logQueue.length > 0){
+      let text = logQueue.shift();
+      let line = document.createElement("div");
+      line.innerHTML = text;
+      box.appendChild(line);
+    }
+
+    box.scrollTop = box.scrollHeight;
+
+    typing = false;
+    skipLogTyping = false;
+    skipAllLogs = false;
+
+    return;
+  }
+
+  if(logQueue.length === 0){
+    typing = false;
+    return;
+  }
+
+  typing = true;
+
+  let text = logQueue.shift();
+  let box = el("log");
+
+  let line = document.createElement("div");
+  box.appendChild(line);
+
+  let i = 0;
+  let buffer = "";
+
+  function typeCharInner(){
+
+    if(skipLogTyping){
+      line.innerHTML = text;
+      skipLogTyping = false;
+      box.scrollTop = box.scrollHeight;
+      setTimeout(typeNextLog, 0);
+      return;
+    }
+
+    if(i < text.length){
+
+      if(text[i] === "<"){
+        let close = text.indexOf(">", i);
+
+        if(close !== -1){
+          buffer += text.slice(i, close + 1);
+          i = close + 1;
+        } else {
+          buffer += text[i];
+          i++;
+        }
+      } else {
+        buffer += text[i];
+        i++;
+      }
+
+      line.innerHTML = buffer;
+      box.scrollTop = box.scrollHeight;
+
+      setTimeout(typeCharInner, 12);
+
+    } else {
+      line.innerHTML = text;
+      box.scrollTop = box.scrollHeight;
+      setTimeout(typeNextLog, 60);
+    }
+  }
+
+  typeCharInner();
+}
+
+let tutorialLogOpen = false;
+
+function showFullTutorialLog(){
+
+  if(tutorialLogOpen) return;
+  tutorialLogOpen = true;
+
+  log(`<span class="tutorialText">📖 FULL TUTORIAL</span>`, true);
+
+  log(`<span class="tutorialText">⚔️ Combat:</span> Click a hero skill to use it. Physical skills usually scale with Attack. Magic and healing skills usually scale with Magic.`, true);
+
+  log(`<span class="tutorialText">🎯 Targeting:</span> Click enemies or allies to choose targets. Some skills hit one target, while others affect all enemies or all allies.`, true);
+
+  log(`<span class="tutorialText">⏳ Cooldowns:</span> Stronger skills often need turns to recharge. Skills with lower cooldowns are your reliable filler options.`, true);
+
+  log(`<span class="tutorialText">🛡️ Defend & Counter:</span> Defend reduces incoming damage. Counter reduces damage and strikes back against enemies that attack the hero before their next turn.`, true);
+
+  log(`<span class="tutorialText">☠️ Status Effects:</span> Poison stacks up to 5 times and deals more damage each tick. Burn deals damage over time. Regen heals over time. Stun can stop a turn.`, true);
+
+  log(`<span class="tutorialText">🧙 Party Roles:</span> Knight protects and breaks armor. Rogue deals fast damage and poison. Cleric heals and supports. Mage brings heavy magic damage.`, true);
+
+  log(`<span class="tutorialText">🎒 Equipment:</span> Gear improves hero stats. Stronger equipment can make a big difference against bosses and later waves.`, true);
+
+  log(`<span class="tutorialText">👑 Bosses:</span> Bosses may resist statuses and become more dangerous at low HP. Save strong cooldowns for key moments.`, true);
+
+  setTimeout(() => {
+    tutorialLogOpen = false;
+  }, 8000);
+}
+
+function formatItemStats(item){
+  if(!item || !item.stats) return "";
+
+  let parts = [];
+
+  for(let k in item.stats){
+    let v = item.stats[k];
+    let sign = v > 0 ? "+" : "";
+    parts.push(`${k.toUpperCase()} ${sign}${v}`);
+  }
+
+  return parts.join(", ");
+}
+
+function getCost(entity, ability){
+  let base = ability.cost ?? ability.stamina ?? 0;
+  return Math.floor(base + entity.level * 0.6);
+}
+
+function alive(list){
+return list.filter(x => x && x.hp > 0 && !x.dead);
+}
+
+function fullHealHeroes(){
+  heroes.forEach(h => {
+    if(h && !h.dead){
+      h.hp = h.maxHp;
+
+      if(h.maxStamina != null){
+        h.stamina = h.maxStamina;
+      }
+
+      if(h.maxMp != null){
+        h.mp = h.maxMp;
+      }
+    }
+  });
+
+  log(`✨ The party recovers after the boss battle!`);
+}
+
+function pruneTurnQueue(){
+  turnQueue = turnQueue.filter(q =>
+    q &&
+    q.entity &&
+    q.entity.hp > 0 &&
+    !q.entity.dead
+  );
+
+  if(turnIndex > turnQueue.length){
+    turnIndex = turnQueue.length;
+  }
+}
+
+function cleanupDeadEnemies(){
+  enemies = enemies.filter(e => e && e.hp > 0 && !e.dead);
+
+  pruneTurnQueue();
+
+  if(selectedEnemy != null && enemies[selectedEnemy] == null){
+    selectedEnemy = null;
+  }
+
+  render();
+  renderTurnBar();
+}
+
+function getStats(entity){
+
+let eq = entity.equipment || {};
+
+let bonus = {
+  attack:0,
+  def:0,
+  magic:0,
+  resist:0,
+  hp:0,
+  speed:0,
+  critRate:0,
+  critMult:0
+};
+
+for(let k in eq){
+  let item = eq[k];
+  if(!item) continue;
+
+  for(let stat in item.stats){
+    if(bonus[stat] != null){
+      bonus[stat] += item.stats[stat];
+    }
+  }
+}
+
+return {
+  attack:(entity.attack||0)+bonus.attack,
+  def:(entity.def||0)+bonus.def,
+  magic:(entity.magic||0)+bonus.magic,
+  resist:(entity.resist||0)+bonus.resist,
+  hp:(entity.maxHp||0)+bonus.hp,
+  speed:(entity.speed||0)+bonus.speed,
+  critRate:(entity.critRate||0)+bonus.critRate,
+  critMult:(entity.critMult||0)+bonus.critMult
+};
+
+}
+
+function setCooldown(entity, ability){
+  ability.cooldown = ability.cooldownMax;
+}
+
+/* ================= DAMAGE ================= */
+
+function computeDamage(attacker, target, skill){
+
+  let a = getStats(attacker);
+  let t = getStats(target);
+
+  let atk = skill.scale === "magic" ? a.magic : a.attack;
+  let def = skill.scale === "magic" ? t.resist : t.def;
+
+if(skill.defensePierce){
+  def *= (1 - skill.defensePierce);
+}
+
+  // 1. BASE SKILL DAMAGE (main driver)
+  let base = skill.power + atk * 0.7;
+
+  // 2. LEVEL SCALING (soft, not exponential)
+  let levelScale = 1 + Math.log2(attacker.level + 1) * 0.08;
+
+  // 3. DEFENSE MITIGATION (percentage-based)
+  let defenseFactor = 100 / (100 + def);
+
+  // 4. RANDOMNESS (tight range)
+  let variance = 0.9 + Math.random() * 0.2;
+
+  let dmg = base * levelScale * defenseFactor * variance;
+
+  // 5. CRIT (applied last)
+if(Math.random() < a.critRate){
+  dmg *= a.critMult;
+    log("💥 CRIT!");
+  }
+
+if(target.status?.defend){
+  dmg *= (1 - target.status.defend.reduction);
+}
+
+return Math.max(1, Math.floor(dmg));
+}
+
+/* ================= RESOURCE SYSTEM ================= */
+
+function tickTurn(entity){
+
+  tickCooldowns(entity);
+
+if(entity.aggro && entity.aggro > 0){
+  entity.aggro--;
+}
+
+function tickCooldowns(entity){
+  if(!entity.abilities) return;
+
+  entity.abilities.forEach(a=>{
+    if(a.cooldown > 0){
+      a.cooldown--;
+    }
+  });
+}
+ 
+
+}
+
+
+/* ================= STATUS ================= */
+
+function statusIcons(entity){
+  if(!entity.status) return "";
+
+  let icons = [];
+
+  if(entity.status.poison) icons.push("☠️");
+  if(entity.status.burn) icons.push("🔥");
+  if(entity.status.regen) icons.push("✨");
+  if(entity.status.stun) icons.push("💫");
+  if(entity.status.defend?.counter) icons.push("↩️");
+else if(entity.status.defend) icons.push("🛡️");
+
+  return icons.length
+? `<span style="font-size:13px;">${icons.join("")}</span>`
+: "";
+}
+
+function enemyIntentIcon(intent){
+
+  if(!intent) return "";
+
+  let t = intent.toLowerCase();
+
+  if(t.includes("poison")) return "☠️";
+  if(t.includes("burn")) return "🔥";
+  if(t.includes("stun")) return "💫";
+  if(t.includes("heal")) return "✨";
+  if(t.includes("guard")) return "🛡️";
+
+  return "⚔️";
+}
+
+function enemyHpColor(en){
+  if(en.bossId) return "gold";
+  return "limegreen";
+}
+
+const statusEffects = {
+
+poison:{
+  name:"Poison",
+  tick(target){
+    let stacks = target.status?.poison?.stacks || 1;
+    let poisonDamage = Math.max(2, Math.floor(target.maxHp * 0.02 * stacks));
+
+    target.hp = Math.max(0, target.hp - poisonDamage);
+  }
+},
+
+burn:{
+  name:"Burn",
+  tick(target){
+    target.hp = Math.max(0, target.hp - Math.max(2, Math.floor(target.maxHp * 0.035)));
+  }
+},
+
+regen:{
+  name:"Regen",
+
+  tick(target){
+
+    let before = target.hp;
+
+    let healAmount = Math.max(1, Math.floor(target.maxHp * 0.07));
+
+    target.hp = Math.min(target.maxHp, target.hp + healAmount);
+
+    let healed = target.hp - before;
+
+    if(healed > 0 && Array.isArray(target._regenCasters)){
+
+      // split XP among all regen sources
+      let xp = Math.floor((healed * 1.2) / target._regenCasters.length);
+
+      target._regenCasters.forEach(caster=>{
+        gainHealingXP(caster, xp);
+      });
+    }
+  }
+}
+};
+
+function enemyIntentClass(intent){
+  if(!intent) return "intentAttack";
+
+  let t = intent.toLowerCase();
+
+  if(t.includes("poison") || t.includes("burn") || t.includes("stun")){
+    return "intentDebuff";
+  }
+
+  if(t.includes("guard") || t.includes("defend")){
+    return "intentDefend";
+  }
+
+  if(t.includes("heal")){
+    return "intentHeal";
+  }
+
+  return "intentAttack";
+}
+
+function applyStatus(t, type){
+  if(!t.status) t.status = {};
+
+  // DEFEND //
+if(type === "defend"){
+  t.status.defend = {
+    duration: 1,
+    reduction: 0.65,
+    counter: false
+  };
+  return;
+}
+
+if(type === "counter"){
+  t.status.defend = {
+    duration: 999,
+    reduction: 0.50,
+    counter: true,
+    expiresOnNextTurn: true
+  };
+  return;
+}
+
+if(type === "stun" && t.bossId && Math.random() < 0.70){
+  log(`👑 ${t.name} resists the stun!`);
+  return;
+}
+
+if(type === "poison" && t.bossId && Math.random() < 0.35){
+  log(`👑 ${t.name} resists the poison!`);
+  return;
+}
+
+if(type === "poison"){
+  if(!t.status.poison){
+    t.status.poison = {
+      duration: 3,
+      stacks: 1
+    };
+  } else {
+    t.status.poison.stacks = Math.min(5, t.status.poison.stacks + 1);
+    t.status.poison.duration = 3;
+  }
+
+  log(`☠️ ${t.name} poison stacks increased to ${t.status.poison.stacks}!`);
+  return;
+}
+
+if(type === "burn" && t.bossId && Math.random() < 0.25){
+  log(`👑 ${t.name} resists the burn!`);
+  return;
+}
+
+  // normal statuses
+  t.status[type] = 3;
+}
+
+function handleStatusDeath(t){
+  if(!t || t.hp > 0) return false;
+
+  t.hp = 0;
+  t.dead = true;
+
+  if(heroes.includes(t)){
+    selectedAlly = null;
+
+    if(activeTurn?.entity === t){
+      activeTurn = null;
+    }
+
+    log(`💀 ${t.name} falls from status damage!`);
+pruneTurnQueue();
+
+if(turnIndex >= turnQueue.length){
+  turnIndex = 0;
+}
+
+render();
+renderTurnBar();
+renderHotbar();
+return true;
+  }
+
+  if(enemies.includes(t)){
+    cleanupDeadEnemies();
+    return true;
+  }
+
+  return false;
+}
+
+function tickStatus(t){
+
+  if(!t || !t.status) return;
+
+  for(let k in t.status){
+
+    let s = t.status[k];
+
+// HANDLE OBJECT STATUSES
+if(typeof s === "object"){
+
+  // Counter should last through ALL enemy attacks,
+  // then expire only when this hero's next turn begins.
+  if(s.expiresOnNextTurn){
+    delete t.status[k];
+    continue;
+  }
+
+  if(statusEffects[k]){
+    let beforeHp = t.hp;
+
+    statusEffects[k].tick(t);
+
+    let diff = t.hp - beforeHp;
+
+    if(diff > 0){
+      showFloatText(t, `+${diff}`, "heal");
+    }
+    else if(diff < 0){
+      showFloatText(t, `${diff}`, "damage");
+    }
+  }
+
+  s.duration--;
+
+  if(k === "poison"){
+    log(`☠️ ${t.name} suffers poison x${s.stacks}`);
+  }
+
+if(handleStatusDeath(t)){
+  return;
+}
+
+  if(s.duration <= 0){
+    delete t.status[k];
+  }
+
+  continue;
+}
+
+    // HANDLE NORMAL STATUSES
+    if(s > 0){
+      t.status[k]--;
+if (t.hp <= 0) continue;
+
+if(statusEffects[k]){
+  let beforeHp = t.hp;
+
+statusEffects[k].tick(t);
+
+let diff = t.hp - beforeHp;
+
+if(diff > 0){
+  showFloatText(t, `+${diff}`, "heal");
+}
+else if(diff < 0){
+  showFloatText(t, `${diff}`, "damage");
+}
+}
+
+if(handleStatusDeath(t)){
+  return;
+}
+	
+     if(k !== "defend"){
+        if(k === "poison"){
+  log(`☠️ ${t.name} is poisoned`);
+}
+else if(k === "burn"){
+  log(`🔥 ${t.name} is burning`);
+}
+else if(k === "regen"){
+  log(`✨ ${t.name} regenerates`);
+}
+else if(k === "defend"){
+  log(`🛡️ ${t.name} braces for impact`);
+}
+else if(k === "counter"){
+  log(`↩️ ${t.name} prepares to counterattack`);
+}
+else if(k !== "StartingShield"){
+  log(`${t.name} is affected by ${k}`);
+}
+      }
+
+      if(t.status[k] === 0){
+        delete t.status[k];
+      }
+    }
+  }
+  /* stun handling */
+  if(t.status.stun){
+    t._stunned = true;
+    delete t.status.stun;
+    log(`${t.name} is stunned!`);
+  }
+}
+
+/* ================= TOOLTIP ================= */
+
+function showTooltip(html,x,y){
+let t = el("tooltip");
+t.style.display="block";
+t.style.left = x + 10 + "px";
+t.style.top = y + 10 + "px";
+t.innerHTML = html;
+}
+
+function hideTooltip(){
+el("tooltip").style.display="none";
+}
+
+function isMobile(){
+  return window.matchMedia("(max-width: 768px)").matches;
+}
+
+function resetStoryPanel(){
+  el("descPanel").innerHTML =
+`
+<b>STORY - WAVE ${wave}</b>
+<hr>
+
+<div id="storyTextBox" style="
+  margin-bottom:0;
+  min-height:90px;
+  max-height:100%;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-right:4px;
+">
+${storyTyping ? displayedStoryText : storyText}
+</div>
+`;
+}
+
+function showAbilityPreview(hero, ability){
+
+  let cost = getCost(hero, ability);
+  let currentCooldown = ability.cooldown > 0 ? ability.cooldown : "Ready";
+  let maxCooldown = ability.cooldownMax ?? 0;
+
+  let typeText =
+    ability.type === "physical" ? "Physical Attack" :
+    ability.type === "magic" ? "Magic Skill" :
+    ability.type === "support" ? "Support Skill" :
+    "Skill";
+
+  let targetText =
+    ability.target === "enemy" ? "Single Enemy" :
+    ability.target === "allEnemies" ? "All Enemies" :
+    ability.target === "ally" ? "Single Ally" :
+    ability.target === "allAllies" ? "All Allies" :
+    ability.target === "self" ? "Self" :
+    ability.target;
+
+  let scaleText =
+    ability.scale === "attack" ? "Attack" :
+    ability.scale === "magic" ? "Magic" :
+    ability.scale === "def" ? "Defense" :
+    ability.scale || "None";
+
+  let effectText = "";
+
+  if(ability.apply === "defend"){
+    effectText = "Applies Defend, reducing incoming damage.";
+  }
+  else if(ability.apply === "counter"){
+    effectText = "Applies Counter, reducing damage and counterattacking enemies that hit the hero.";
+  }
+  else if(ability.apply === "stun"){
+    effectText = "Can stun the target, causing them to lose their next action.";
+  }
+  else if(ability.apply === "poison"){
+    effectText = "Applies Poison. Poison stacks up to 5 times and deals stronger damage each tick.";
+  }
+  else if(ability.apply === "burn"){
+    effectText = "Applies Burn, dealing damage over time.";
+  }
+  else if(ability.apply === "regen"){
+    effectText = "Applies Regen, healing over time.";
+  }
+
+el("descPanel").innerHTML = `
+  <div style="
+    display:flex;
+    justify-content:space-between;
+    gap:18px;
+    align-items:flex-start;
+  ">
+
+    <!-- LEFT COLUMN -->
+    <div style="flex:1; min-width:0;">
+
+      <b style="font-size:16px;">${ability.name}</b><br>
+      <span style="color:#aaa;">${typeText}</span>
+
+      <hr>
+
+      <b>Power:</b> ${ability.power ?? 0}<br>
+      <b>Scaling:</b> ${scaleText}<br>
+      <b>Target:</b> ${targetText}<br>
+      <b>Cost:</b> ${cost}<br>
+      <b>Cooldown:</b> ${currentCooldown} / ${maxCooldown}<br>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div style="
+      flex:1;
+      min-width:0;
+      font-size:12px;
+      line-height:1.35;
+    ">
+
+      ${ability.defensePierce
+        ? `<b>Defense Pierce:</b> ${Math.round(ability.defensePierce * 100)}%<br><br>`
+        : ""}
+
+      ${ability.aggroTurns
+        ? `<b>Aggro:</b> Draws attacks for ${ability.aggroTurns} turns<br><br>`
+        : ""}
+
+      ${effectText
+        ? `<b>Effect</b><br>${effectText}<br><br>`
+        : ""}
+
+      <span style="color:#888;">
+        ${isMobile()
+          ? "Long-hold previews this skill."
+          : "Hover skills to preview details."}
+      </span>
+
+    </div>
+
+  </div>
+`;
+}
+
+function renderHotbar(){
+  let bar = el("combatHotbar");
+  if(!bar) return;
+
+  if(!isMobile()){
+    bar.innerHTML = "";
+    return;
+  }
+
+  let hero = heroes[currentHeroIndex];
+
+  if(!hero || hero.hp <= 0 || hero.dead || !hero.abilities){
+    bar.innerHTML = "";
+    return;
+  }
+
+bar.innerHTML = "";
+
+let currentTurnEntity =
+  activeTurn?.entity;
+
+let playerTurn =
+  currentTurnEntity &&
+  heroes.includes(currentTurnEntity);
+
+if(playerTurn){
+  bar.classList.remove("inactive");
+} else {
+  bar.classList.add("inactive");
+}
+
+
+let sortedHotbarAbilities = hero.abilities
+  .map((ability, ai) => ({ability, ai}))
+  .sort((x, y) => {
+
+    function getTypeOrder(a){
+
+      // Physical attacks first
+      if(a.type === "physical"){
+        return 1;
+      }
+
+      // Magic + healing second
+      if(
+        a.type === "magic" ||
+        a.target === "ally" ||
+        a.target === "allAllies"
+      ){
+        return 2;
+      }
+
+      // Support / defense last
+      return 3;
+    }
+
+    let typeDiff =
+      getTypeOrder(x.ability) -
+      getTypeOrder(y.ability);
+
+    // Keep groups separated
+    if(typeDiff !== 0){
+      return typeDiff;
+    }
+
+    // Inside each group:
+    // lower cooldown first
+    let xCooldown = x.ability.cooldownMax ?? 0;
+    let yCooldown = y.ability.cooldownMax ?? 0;
+
+    if(xCooldown !== yCooldown){
+      return xCooldown - yCooldown;
+    }
+
+    // Tie-breaker:
+    // stronger skills first
+    return (y.ability.power || 0) - (x.ability.power || 0);
+  });
+
+sortedHotbarAbilities.forEach(({ability, ai}) => {
+
+    let btn = document.createElement("button");
+
+let locked = ability.cooldown > 0;
+
+    let shouldFlashTutorial =
+  wave <= 2 &&
+  hero._class === "Knight" &&
+  !knightTutorialSkillsUsed[ability.name];
+
+let typeClass = "";
+
+if(ability.type === "physical"){
+  typeClass = "skillAttack";
+}
+
+if(ability.type === "magic"){
+  typeClass = "skillMagic";
+}
+
+if(ability.type === "support"){
+  typeClass = "skillSupport";
+}
+
+btn.className = `hotbarBtn ${typeClass} ${locked ? "locked" : ""} ${shouldFlashTutorial ? "tutorialFlash" : ""}`;
+
+    btn.innerHTML = `
+      ${ability.name}
+        ${locked ? `<span class="cooldownOverlay">${ability.cooldown}</span>` : ""}
+    `;
+
+    let holdTimer = null;
+    let didPreview = false;
+    let touchUsed = false;
+
+    btn.addEventListener("touchstart", () => {
+    didPreview = false;
+    touchUsed = true;
+
+      holdTimer = setTimeout(() => {
+        didPreview = true;
+        showAbilityPreview(hero, ability);
+      }, 450);
+    }, {passive:true});
+
+    btn.addEventListener("touchend", () => {
+      clearTimeout(holdTimer);
+
+      if(didPreview) return;
+
+      if(locked){
+        showAbilityPreview(hero, ability);
+        return;
+      }
+
+      heroAction(currentHeroIndex, ai);
+      setTimeout(resetStoryPanel, 100);
+    });
+
+    btn.addEventListener("click", () => {
+
+if(touchUsed) return;
+
+      if(locked){
+        showAbilityPreview(hero, ability);
+        return;
+      }
+
+      heroAction(currentHeroIndex, ai);
+      setTimeout(resetStoryPanel, 100);
+
+setTimeout(() => {
+  touchUsed = false;
+}, 350);
+
+    });
+
+    bar.appendChild(btn);
+  });
+}
+
+function typeStory(html){
+
+  storyTypeId++;
+  let thisType = storyTypeId;
+
+  storyTyping = true;
+  displayedStoryText = "";
+
+  let i = 0;
+
+  function tick(){
+
+    if(thisType !== storyTypeId) return;
+
+    let box = el("storyTextBox");
+
+    if(!box){
+      setTimeout(tick, 16);
+      return;
+    }
+
+    // HANDLE HTML TAGS INSTANTLY
+    if(html[i] === "<"){
+
+      let close = html.indexOf(">", i);
+
+      if(close !== -1){
+        displayedStoryText += html.slice(i, close + 1);
+        i = close + 1;
+      }
+
+    } else {
+
+      displayedStoryText += html[i];
+      i++;
+    }
+
+    box.innerHTML = displayedStoryText;
+
+    box.scrollTop = box.scrollHeight;
+
+let desc = el("descPanel");
+if(desc){
+  desc.scrollTop = desc.scrollHeight;
+}
+
+    if(i < html.length){
+
+      // slower pauses after punctuation
+      let delay = 18;
+
+      let last = html[i-1];
+
+      if(last === "." || last === "!" || last === "?"){
+        delay = 140;
+      }
+
+      if(last === ","){
+        delay = 70;
+      }
+
+      if(last === "\n"){
+        delay = 120;
+      }
+
+      setTimeout(tick, delay);
+
+    } else {
+
+      displayedStoryText = html;
+      storyTyping = false;
+      box.innerHTML = html;
+      box.scrollTop = box.scrollHeight;
+
+let desc = el("descPanel");
+if(desc){
+  desc.scrollTop = desc.scrollHeight;
+}
+    }
+  }
+
+  tick();
+}
+
+/* ================= HEROES ================= */
+
+function recruit(unit, side = "hero"){
+
+assignUnitAnimId(unit);
+
+  if(side === "enemy"){
+    unit.justSummoned = true;
+    enemies.push(unit);
+  } else {
+    unit.justRecruited = true;
+    heroes.push(unit);
+  }
+
+  log(`🧑‍🤝‍🧑 ${unit.name} joins the party!`);
+  render();
+}
+
+function triggerPassive(hero, trigger){
+
+  if(!hero.passives) return;
+
+  hero.passives.forEach(p => {
+
+    if(p.trigger === trigger){
+      p.effect(hero);
+    }
+
+  });
+}
+
+function replaceAbility(hero, oldName, newAbility){
+  let index = hero.abilities.findIndex(a => a.name === oldName);
+
+  if(index !== -1){
+    hero.abilities[index] = newAbility;
+  } else {
+    hero.abilities.push(newAbility);
+  }
+}
+
+function addAbility(hero, ability){
+  if(!hero.abilities.some(a => a.name === ability.name)){
+    hero.abilities.push(ability);
+  }
+}
+
+let heroes = [
+{
+  animId: unitAnimIdCounter++,
+  name:"Knight",
+  _class:"Knight",
+  level:1,xp:0,
+  hp:100,maxHp:100,
+  attack:10,def:8,magic:3,resist:6,
+  speed:6,
+  critRate:0.06,critMult:1.5,
+  status:{},
+  equipment:{weapon:null,armor:null,accessory:null},
+abilities:[ 
+{name:"Quick Slash",type:"physical",power:8,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
+  
+{name:"Guard Break",type:"physical",power:22,cooldownMax:2,cooldown:0,scale:"attack",target:"enemy",defensePierce:0.45},
+  
+{name:"Shield Bash",type:"physical",power:12,cooldownMax:4,cooldown:0,scale:"attack",apply:"stun",target:"enemy"},
+
+{name:"Defend",type:"support",power:0,cooldownMax:2,cooldown:0,scale:"attack",target:"self",apply:"defend"}
+
+]
+}
+];
+
+/* ================= ENEMIES ================= */
+
+const enemyTypes = {
+
+assassin: {
+  name: "Assassin",
+  hp: 25,
+  atk: 3,
+  def: 3,
+  resist: 3,
+  speed: 12,
+  abilities: [
+    { name:"Shadow Cut", type:"physical", power:2, scale:"attack", target:"enemy" },
+    { name:"Poison Blade", type:"physical", power:1, scale:"attack", apply:"poison", target:"enemy", cooldownMax:2 }
+  ]
+},
+
+assassin_boss: {
+  name: "Royal Assassin",
+  bossId: "royal_assassin",
+  hp: 190,
+  atk: 10,
+  def: 8,
+  resist: 7,
+  speed: 15,
+  critRate: 0.12,
+  critMult: 1.7,
+  abilities: [
+    { name:"Execution Combo", type:"physical", power:12, scale:"attack", target:"enemy" },
+    { name:"Silence Field", type:"physical", power:3, scale:"attack", target:"allEnemies", apply:"stun", cooldownMax:4 },
+    { name:"Call Reinforcements", type:"support", power:0, scale:"attack", target:"self", cooldownMax:5 }
+  ]
+},
+
+guard: {
+  name: "Dungeon Guard",
+  hp: 65,
+  atk: 5,
+  def: 8,
+  resist: 4,
+  speed: 4,
+  abilities: [
+    { name:"Spear Thrust", power:4, scale:"attack", target:"enemy" },
+    { name:"Shield Wall", type:"support", power:0, scale:"attack", target:"self", apply:"defend", cooldownMax:3 }
+  ]
+},
+
+dungeon_warden: {
+  name: "Dungeon Warden",
+  bossId: "dungeon_warden",
+  hp: 400,
+  atk: 13,
+  def: 14,
+  resist: 12,
+  speed: 6,
+  abilities: [
+    { name:"Chain Smash", type:"physical", power:20, scale:"attack", target:"enemy" },
+    { name:"Lockdown", type:"support", power:0, scale:"attack", target:"allEnemies", apply:"stun", cooldownMax:5 },
+    { name:"Dungeon Alarm", type:"support", power:0, scale:"attack", target:"self", cooldownMax:5 }
+  ]
+},
+
+  goblin: {
+    name: "Goblin",
+    hp: 50,
+    atk: 11,
+    def: 2,
+    resist: 2,
+    speed: 6,
+    abilities: [
+      { name:"Stab", type:"physical", power:14, scale:"attack", target:"enemy" },
+      { name:"Poison Knife", type:"physical", power:10, scale:"attack", apply:"poison", target:"enemy", cooldownMax:2 }
+    ]
+  },
+
+  hobgoblin: {
+    name: "Hobgoblin",
+    hp: 65,
+    atk: 9,
+    def: 10,
+    resist: 3,
+    speed: 5,
+    abilities: [
+      { name:"Heavy Stab", type:"physical", power:10, scale:"attack", target:"enemy" },
+      { name:"Guard Up", type:"support", power:0, scale:"attack", target:"self", apply:"defend", cooldownMax:3 }
+    ]
+  },
+
+  elite_goblin: {
+    name: "Elite Goblin",
+    hp: 80,
+    atk: 12,
+    def: 5,
+    resist: 4,
+    speed: 9,
+    critRate: 0.10,
+    abilities: [
+      { name:"Twin Strike", type:"physical", power:8, scale:"attack", target:"enemy" },
+      { name:"Poison Blade", type:"physical", power:10, scale:"attack", apply:"poison", target:"enemy", cooldownMax:2 }
+    ]
+  },
+
+  orc: {
+    name: "Orc Raider",
+    hp: 95,
+    atk: 14,
+    def: 7,
+    resist: 3,
+    speed: 5,
+    abilities: [
+      { name:"Cleave", type:"physical", power:14, scale:"attack", target:"enemy" },
+      { name:"Rage", type:"support", power:0, scale:"attack", target:"self", apply:"defend", cooldownMax:3 }
+    ]
+  },
+
+goblin_king_guard: {
+  name: "Goblin King Guard",
+  hp: 130,
+  atk: 15,
+  def: 12,
+  resist: 6,
+  speed: 6,
+  abilities: [
+    { name:"Royal Spear", type:"physical", power:16, scale:"attack", target:"enemy" },
+    { name:"Guard the King", type:"support", power:0, scale:"attack", target:"self", apply:"defend", cooldownMax:3 }
+  ]
+},
+
+goblin_king: {
+  name: "Goblin King",
+  bossId: "goblin_king",
+  hp: 470,
+  atk: 24,
+  def: 12,
+  resist: 10,
+  speed: 8,
+  critRate: 0.08,
+  critMult: 1.6,
+  abilities: [
+    { name:"Royal Slash", type:"physical", power:30, scale:"attack", target:"enemy" },
+    { name:"Call Minions", type:"support", power:0, scale:"attack", target:"self", cooldownMax:3 },
+    { name:"Frenzy Roar", type:"support", power:0, scale:"attack", target:"allEnemies", apply:"burn", cooldownMax:4 },
+    { name:"Royal Guard Call", type:"support", power:0, scale:"attack", target:"self", cooldownMax:3 }
+  ]
+},
+
+forest_wolf: {
+  name: "Forest Wolf",
+  hp: 55,
+  atk: 10,
+  def: 3,
+  resist: 2,
+  speed: 15,
+  abilities: [
+    { name:"Bite", type:"physical", power:10, scale:"attack", target:"enemy" },
+    { name:"Howl", type:"support", power:0, scale:"attack", target:"self", apply:"defend", cooldownMax:3 }
+  ]
+},
+
+ent: {
+  name: "Forest Ent",
+  hp: 140,
+  atk: 13,
+  def: 9,
+  resist: 6,
+  speed: 2,
+  abilities: [
+    { name:"Branch Slam", type:"physical", power:16, scale:"attack", target:"enemy" },
+    { name:"Root Bind", type:"support", power:0, scale:"attack", target:"enemy", apply:"stun", cooldownMax:4 }
+  ]
+},
+
+spore_mage: {
+  name: "Spore Druid",
+  hp: 70,
+  atk: 8,
+  def: 4,
+  resist: 12,
+  speed: 7,
+  abilities: [
+    { name:"Spore Burst", type:"magic", power:10, scale:"magic", apply:"poison", target:"enemy" },
+    { name:"Regrowth", type:"support", power:18, scale:"magic", target:"self", apply:"regen", cooldownMax:3 }
+  ]
+},
+
+evil_mage: {
+  name: "Corrupted Mage",
+  bossId: "corrupted_mage",
+  hp: 330,
+  atk: 18,
+  def: 7,
+  resist: 22,
+  speed: 11,
+  abilities: [
+    { name:"Void Bolt", power:22, scale:"magic", target:"enemy", apply:"burn" },
+    { name:"Dark Surge", power:30, scale:"magic", target:"allEnemies", cooldownMax:5 }
+  ]
+},
+
+colossal_wolf: {
+  name: "Colossal Wolf",
+  bossId: "colossal_wolf",
+  hp: 420,
+  atk: 28,
+  def: 12,
+  resist: 8,
+  speed: 15,
+  abilities: [
+    { name:"Devour", type:"physical", power:28, scale:"attack", target:"enemy" },
+    { name:"Alpha Roar", type:"support", power:0, scale:"attack", target:"allEnemies", apply:"stun", cooldownMax:4 }
+  ]
+},
+
+squire: {
+  name: "Squire",
+  hp: 80,
+  atk: 10,
+  def: 6,
+  resist: 4,
+  speed: 6,
+  abilities: [
+    { name:"Training Strike", power:10, scale:"attack", target:"enemy" }
+  ]
+},
+
+foot_knight: {
+  name: "Foot Knight",
+  hp: 140,
+  atk: 14,
+  def: 10,
+  resist: 6,
+  speed: 5,
+  abilities: [
+    { name:"Sword Thrust", power:16, scale:"attack", target:"enemy" },
+    { name:"Shield Wall", power:0, scale:"attack", target:"self", apply:"defend", cooldownMax:3 }
+  ]
+},
+
+lancer: {
+  name: "Royal Lancer",
+  hp: 110,
+  atk: 16,
+  def: 7,
+  resist: 5,
+  speed: 9,
+  abilities: [
+    { name:"Lance Charge", power:20, scale:"attack", target:"enemy" }
+  ]
+},
+
+warlord: {
+  name: "Knight Warlord",
+  bossId: "knight_warlord",
+  hp: 450,
+  atk: 28,
+  def: 18,
+  resist: 12,
+  speed: 7,
+  abilities: [
+    { name:"Execution Strike", power:35, scale:"attack", target:"enemy" },
+    { name:"Battle Command", power:0, scale:"attack", target:"allEnemies", apply:"defend", cooldownMax:3 }
+  ]
+},
+
+wisp: {
+  name: "Arcane Wisp",
+  hp: 50,
+  atk: 12,
+  def: 3,
+  resist: 10,
+  speed: 18,
+  abilities: [
+    { name:"Arcane Zap", power:14, scale:"magic", target:"enemy" }
+  ]
+},
+
+mage_apprentice: {
+  name: "Mage Apprentice",
+  hp: 60,
+  atk: 10,
+  def: 5,
+  resist: 9,
+  speed: 9,
+  abilities: [
+    { name:"Fire Bolt", power:16, scale:"magic", target:"enemy", apply:"burn" }
+  ]
+},
+
+arcane_guardian: {
+  name: "Arcane Guardian",
+  hp: 230,
+  atk: 18,
+  def: 13,
+  resist: 15,
+  speed: 6,
+  abilities: [
+    { name:"Mana Shield Bash", power:18, scale:"attack", target:"enemy", apply:"stun" }
+  ]
+},
+
+ancient_dragon: {
+  name: "Ancient Dragon",
+  bossId: "ancient_dragon",
+  hp: 850,
+  atk: 38,
+  def: 18,
+  resist: 22,
+  speed: 11,
+  abilities: [
+    { name:"Dragon Breath", power:45, scale:"magic", target:"allEnemies", apply:"burn", cooldownMax:3 },
+    { name:"Tail Sweep", power:30, scale:"attack", target:"allEnemies", cooldownMax:2 }
+  ]
+},
+};
+
+function getEnemyIcon(type){
+  const icons = {
+    assassin:"🗡️",
+    assassin_boss:"👑",
+    guard:"🛡️",
+    dungeon_warden:"⛓️",
+    goblin:"👺",
+    hobgoblin:"👺",
+    elite_goblin:"👺",
+    orc:"🪓",
+    goblin_king:"👑",
+    forest_wolf:"🐺",
+    ent:"🌳",
+    spore_mage:"🍄",
+    evil_mage:"🔮",
+    colossal_wolf:"🐺",
+    wisp:"✨",
+    mage_apprentice:"🔥",
+    arcane_guardian:"🛡️",
+    ancient_dragon:"🐉"
+  };
+
+  return icons[type] || "❓";
+}
+
+function createEnemy(type, wave, isBoss=false){
+
+let base = enemyTypes[type];
+
+let earlyGame = wave <= 3 ? 0.8 : 1;
+
+// Adjust Enemy Scale //
+let scale = 1 + wave * 0.035;
+scale = Math.min(scale, 2.8 + wave * 0.02);
+if (wave <= 3) {
+  scale *= 0.7;
+}
+
+return {
+  animId: unitAnimIdCounter++,
+  name: base.name,
+  type:type,
+  icon:getEnemyIcon(type),
+  bossId: base.bossId,
+  isBoss: !!base.bossId,
+  level: wave,
+
+  hp: Math.floor(base.hp * scale * earlyGame),
+  maxHp: Math.floor(base.hp * scale * earlyGame),
+
+  attack: Math.floor(base.atk * scale * 0.9 * earlyGame),
+  def: Math.floor(base.def * scale * 0.9),
+  resist: Math.floor(base.resist * scale * 0.9),
+
+  critRate: base.critRate || 0.03,
+  critMult: base.critMult || 1.5,
+
+  speed: Math.floor(base.speed * scale),
+
+  status: {},
+
+abilities: JSON.parse(JSON.stringify(base.abilities)).map(a => ({
+  cooldown:0,
+  cooldownMax:0,
+  ...a
+}))
+};
+}
+
+function createEnemies(w){
+
+let list = [];
+
+/* ================= KINGDOM ASSASSINS (1–5) ================= */
+if(w <= 5){
+
+  if(w < 5){
+    let count = 2 + Math.floor(w/2);
+
+    for(let i=0;i<count;i++){
+      list.push(createEnemy("assassin", w));
+    }
+  }
+
+  if(w === 5){
+    list.push(createEnemy("assassin_boss", w, true));
+  }
+}
+
+/* ================= DUNGEON ESCAPE (6–10) ================= */
+else if(w <= 10){
+
+  if(w < 10){
+    let count = 2 + Math.floor(w/2);
+
+    for(let i=0;i<count;i++){
+      list.push(createEnemy("guard", w));
+    }
+  }
+
+  if(w === 10){
+    list.push(createEnemy("guard", w));
+    list.push(createEnemy("dungeon_warden", w, true));
+  }
+}
+
+/* ================= GOBLIN CAVES (11–15) ================= */
+else if(w <= 15){
+
+  if(w < 15){
+
+    let pool;
+
+    if(w <= 12){
+      pool = ["goblin","hobgoblin"];
+    } else {
+      pool = ["goblin","hobgoblin","elite_goblin","orc"];
+    }
+
+    let count = 3 + Math.floor((w-10)/2);
+
+    for(let i=0;i<count;i++){
+      list.push(createEnemy(pool[Math.floor(Math.random()*pool.length)], w));
+    }
+  }
+
+  if(w === 15){
+    list.push(createEnemy("goblin_king_guard", w));
+    list.push(createEnemy("goblin_king", w, true));
+  }
+}
+
+/* ================= CORRUPTED FOREST (16–20) ================= */
+else if(w <= 20){
+
+if(w < 20){
+
+  let pool = ["forest_wolf","ent","spore_mage"];
+  let count = 3 + Math.floor((w-15)/2);
+
+  for(let i=0;i<count;i++){
+    list.push(createEnemy(pool[Math.floor(Math.random()*pool.length)], w));
+  }
+
+}
+
+  if(w === 20){
+    list.push(createEnemy("colossal_wolf", w, true));
+    list.push(createEnemy("evil_mage", w, true));
+  }
+}
+
+/* ================= MAGIC EMPIRE (21-25) ================= */
+else if(w <= 25){
+
+  let pool = ["wisp","mage_apprentice","arcane_guardian"];
+
+  let count = 3 + Math.floor((w-20)/2);
+
+  for(let i=0;i<count;i++){
+    list.push(createEnemy(pool[Math.floor(Math.random()*pool.length)], w));
+  }
+}
+
+/* ================= ENDLESS MODE (26+) ================= */
+else{
+  let pool = [
+    "goblin","orc",
+    "forest_wolf","ent",
+    "foot_knight","lancer",
+    "wisp","arcane_guardian"
+  ];
+
+  let count = Math.min(2 + Math.floor(w * 0.4), 7);
+
+  for(let i=0;i<count;i++){
+    let type = pool[Math.floor(Math.random()*pool.length)];
+    list.push(createEnemy(type, w));
+  }
+
+  if(w % 5 === 0){
+    list.push(createEnemy("ancient_dragon", w, true));
+  }
+}
+
+// separate boss enemies (anything marked as boss via hp threshold or flag)
+let bosses = list.filter(e =>
+  e.bossId || e.maxHp >= 300 || e.name.includes("King") || e.name.includes("Dragon")
+);
+
+list = list.filter(e => !bosses.includes(e));
+
+// ================= GLOBAL ENEMY LIMIT SYSTEM =================
+
+// base cap
+let baseCap = 5;
+
+// reduce enemies right after bosses
+let postBossPenalty = 0;
+
+// boss waves get smaller enemy counts after them
+if (wave === 6 || wave === 11 || wave === 16 || wave === 21) {
+  postBossPenalty = 2;
+}
+
+// final cap calculation
+let maxNormals = bosses.length > 0 ? (baseCap - bosses.length) : baseCap;
+
+// apply post-boss reduction
+maxNormals = Math.max(2, maxNormals - postBossPenalty);
+
+// enforce cap
+list = list.slice(0, maxNormals);
+
+list.push(...bosses);
+return list;
+}
+
+/* ================= ITEMS ================= */
+
+const items = [
+  { id:"iron_sword", name:"Iron Sword", slot:"weapon", rarity:"common", stats:{ attack:3 } },
+
+  { id:"steel_sword", name:"Steel Sword", slot:"weapon", rarity:"uncommon", stats:{ attack:5 } },
+
+  { id:"dragon_sword", name:"Dragon Sword", slot:"weapon", rarity:"rare", stats:{ attack:8 } },
+
+  { id:"leather_armor", name:"Leather Armor", slot:"armor", rarity:"common", stats:{ def:2 } },
+
+  { id:"chain_armor", name:"Chain Armor", slot:"armor", rarity:"uncommon", stats:{ def:4 } },
+
+  { id:"dragon_scale", name:"Dragon Scale Armor", slot:"armor", rarity:"rare", stats:{ def:7, hp:5 } },
+
+  { id:"ring_magic", name:"Mage Ring", slot:"accessory", rarity:"common", stats:{ resist:2, critRate:0.03 } },
+
+  { id:"ring_vitality", name:"Ring of Vitality", slot:"accessory", rarity:"uncommon", stats:{ hp:10 } },
+
+  { id:"ring_ancient", name:"Ancient Ring", slot:"accessory", rarity:"rare", stats:{ resist:3, critRate:0.06, hp:8 } },
+
+// ====== Wave Specific Items ====== //
+{ id:"shadow_dagger", name:"Shadow Dagger", slot:"weapon", rarity:"common", waveMin:1, waveMax:5, stats:{ attack:4, speed:1 } },
+
+{ id:"prisoners_rags", name:"Prisoner’s Rags", slot:"armor", rarity:"common", waveMin:1, waveMax:5, stats:{ def:2, hp:5 } },
+
+{ id:"silent_hood", name:"Silent Hood", slot:"armor", rarity:"uncommon", waveMin:1, waveMax:5, stats:{ speed:2, critRate:0.05 } },
+
+{ id:"royal_sigil_ring", name:"Royal Sigil Ring", slot:"accessory", rarity:"rare", waveMin:1, waveMax:5, stats:{ attack:3, resist:2 } },
+
+{ id:"guard_longsword", name:"Guard Longsword", slot:"weapon", rarity:"common", waveMin:6, waveMax:10, stats:{ attack:6 } },
+
+{ id:"iron_plate", name:"Iron Plate Armor", slot:"armor", rarity:"uncommon", waveMin:6, waveMax:10, stats:{ def:7, hp:10 } },
+
+{ id:"warden_shield_core", name:"Warden Shield Core", slot:"armor", rarity:"rare", waveMin:6, waveMax:10, stats:{ def:12, resist:4 } },
+
+{ id:"lawkeepers_band", name:"Lawkeeper’s Band", slot:"accessory", rarity:"uncommon", waveMin:6, waveMax:10, stats:{ def:3 } },
+
+{ id:"goblin_bone_spear", name:"Goblin Bone Spear", slot:"weapon", rarity:"common", waveMin:11, waveMax:15, stats:{ attack:7 } },
+
+{ id:"cave_hide_armor", name:"Cave Hide Armor", slot:"armor", rarity:"common", waveMin:11, waveMax:15, stats:{ def:5, hp:8 } },
+
+{ id:"king_tooth_blade", name:"Goblin King Tooth Blade", slot:"weapon", rarity:"rare", waveMin:11, waveMax:15, stats:{ attack:12, critRate:0.1 } },
+
+{ id:"cave_spirit_talisman", name:"Cave Spirit Talisman", slot:"accessory", rarity:"uncommon", waveMin:11, waveMax:15, stats:{ resist:5, hp:8 } },
+
+{ id:"wolffang_sword", name:"Wolffang Sword", slot:"weapon", rarity:"uncommon", waveMin:16, waveMax:20, stats:{ attack:10, speed:2 } },
+
+{ id:"entwood_carapace", name:"Entwood Carapace", slot:"armor", rarity:"rare", waveMin:16, waveMax:20, stats:{ def:14, resist:6 } },
+
+{ id:"spore_core_fragment", name:"Spore Core Fragment", slot:"accessory", rarity:"rare", waveMin:16, waveMax:20, stats:{ resist:5, hp:18, critRate:0.05 } },
+
+{ id:"beast_claw_blade", name:"Beast Claw Blade", slot:"weapon", rarity:"rare", waveMin:16, waveMax:20, stats:{ attack:15, critRate:0.12 } },
+
+{ id:"arcane_relic_staff", name:"Arcane Relic Staff", slot:"weapon", rarity:"uncommon", waveMin:21, stats:{ attack:7, critRate:0.05 } },
+
+{ id:"voidwoven_robe", name:"Voidwoven Robe", slot:"armor", rarity:"rare", waveMin:21, stats:{ resist:8, hp:14, speed:1 } },
+
+{ id:"ancient_dragon_scale", name:"Ancient Dragon Scale", slot:"armor", rarity:"legendary", waveMin:21, stats:{ def:10, resist:10, hp:15 } },
+
+{ id:"void_core_ring", name:"Void Core Ring", slot:"accessory", rarity:"legendary", waveMin:21, stats:{ attack:8, critRate:0.18, critMult:0.25 } },
+
+
+// ================= ROYAL ASSASSIN LOOT =================
+{ id:"assassin_blade", name:"Blade of the Silent Throne", slot:"weapon", rarity:"legendary", bossOnly: "royal_assassin",
+  stats:{ attack:6, critRate:0.12 } },
+
+{ id:"royal_shadow_cloak", name:"Royal Shadow Cloak", slot:"armor", rarity:"legendary", bossOnly: "royal_assassin",
+  stats:{ def:6, speed:4 } },
+
+// ================= WARDEN BOSS LOOT =================
+{ id:"warden_greatshield", name:"Dungeon Warden Shield", slot:"weapon", rarity:"legendary", bossOnly: "dungeon_warden",
+  stats:{ def:6, resist:3 } },
+
+{ id:"chains_of_control", name:"Chains of Control", slot:"accessory", rarity:"legendary", bossOnly: "dungeon_warden",
+  stats:{ hp:30, def:4 } },
+
+// ================= GOBLIN KING LOOT =================
+{ id:"crown_of_goblins", name:"Goblin King's Crown", slot:"accessory", rarity:"legendary", bossOnly: "goblin_king",
+  stats:{ attack:5, speed:2, critRate:0.08 } },
+
+{ id:"royal_goblin_blade", name:"Royal Goblin Cleaver", slot:"weapon", rarity:"legendary", bossOnly: "goblin_king",
+  stats:{ attack:15 } },
+
+// ================= COLLOSAL WOLF LOOT =================
+{ id:"alpha_fang", name:"Alpha Fang", slot:"weapon", rarity:"legendary", bossOnly: "colossal_wolf",
+  stats:{ attack:16, critMult:0.2 } },
+
+// ================= EVIL MAGE LOOT =================
+{ id:"void_tome", name:"Void Tome", slot:"weapon", rarity:"legendary", bossOnly: "evil_mage",
+  stats:{ attack:10, critRate:0.12, critMult:0.35 } },
+];
+
+const rarityRank = {
+  common: 1,
+  uncommon: 2,
+  rare: 3,
+  legendary: 4
+};
+
+const rarityChances = {
+  common: 0.85,
+  uncommon: 0.12,
+  rare: 0.02,
+  legendary: 0.01
+};
+
+const baseDropChance = 0.35;
+
+
+function rollRarity(){
+
+  let r = Math.random();
+
+  if(r < rarityChances.legendary) return "legendary";
+
+  if(r < rarityChances.legendary + rarityChances.rare){
+    return "rare";
+  }
+
+  if(r < rarityChances.legendary + rarityChances.rare + rarityChances.uncommon){
+    return "uncommon";
+  }
+
+  return "common";
+}
+
+function getLoot(){
+
+  let slotTypes = ["weapon", "armor", "accessory"];
+  let slot = slotTypes[Math.floor(Math.random() * slotTypes.length)];
+
+  // ONLY items allowed for this wave //
+  let pool = items.filter(i =>
+    i.slot === slot &&
+    (!i.waveMin || wave >= i.waveMin) &&
+    (!i.waveMax || wave <= i.waveMax)
+  );
+
+  // fallback if nothing matches //
+  if(pool.length === 0){
+    pool = items.filter(i => i.slot === slot);
+  }
+
+let rarity = rollRarity();
+
+let rarityPool = pool.filter(i => i.rarity === rarity);
+
+if(rarityPool.length === 0){
+  rarityPool = pool;
+}
+
+return rarityPool[Math.floor(Math.random() * rarityPool.length)];
+}
+
+function equipItem(hero, item){
+
+let slot = item.slot;
+
+// equip
+hero.equipment[slot] = item;
+
+applyEquipmentStats(hero);
+
+}
+
+function tryPartyEquipItem(item){
+
+  let bestHero = null;
+  let bestGain = 0;
+
+alive(heroes).forEach(hero => {
+  if(hero._class === "RoyalGuard") return;
+
+  if(!hero.equipment){
+    hero.equipment = {weapon:null, armor:null, accessory:null};
+  }
+
+    let currentItem = hero.equipment[item.slot];
+
+    let oldScore = currentItem ? getItemScoreForHero(hero, currentItem) : 0;
+    let newScore = getItemScoreForHero(hero, item);
+
+    let gain = newScore - oldScore;
+
+    if(!currentItem){
+      gain += 2; // bonus for empty slot
+    }
+
+    if(gain > bestGain){
+      bestGain = gain;
+      bestHero = hero;
+    }
+  });
+
+  if(bestHero && bestGain > 0){
+    equipItem(bestHero, item);
+    log(`⬆️ ${bestHero.name} equips ${item.name} (${item.slot})`);
+    return true;
+  }
+
+if(item.rarity === "legendary"){
+  backpack.push(item);
+  log(`🎒 ${item.name} was stored in the Backpack.`);
+  render();
+  return false;
+}
+
+log(`❌ Nobody benefits from ${item.name}. It is discarded.`);
+return false;
+}
+
+function applyDevStart(){
+
+  if(!DEV_MODE) return;
+
+  if(DEV_START_WAVE >= 6 && !heroes.some(h => h._class === "Rogue")){
+    heroes.push({
+      name:"Rogue",
+      _class:"Rogue",
+      level: DEV_START_WAVE - 2,
+      xp:0,
+      hp:135,maxHp:135,
+      stamina:80,maxStamina:80,
+      attack:18,def:10,magic:8,resist:8,
+      speed:12,
+      critRate:0.2,critMult:1.8,
+      staminaRegenPct:0.14,
+      status:{},
+      equipment:{weapon:null,armor:null,accessory:null},
+      abilities:[
+        {name:"Quick Strike",type:"physical",power:9,stamina:4,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
+        {name:"Backstab",type:"physical",power:24,stamina:10,cooldownMax:2,cooldown:0,scale:"attack",target:"enemy"},
+        {name:"Poison Blade",type:"physical",power:14,stamina:12,cooldownMax:3,cooldown:0,scale:"attack",apply:"poison",target:"enemy"},
+        {name:"Smoke Dodge",type:"support",power:0,stamina:8,cooldownMax:3,cooldown:0,scale:"attack",target:"self",apply:"defend"}
+      ]
+    });
+  }
+
+  if(DEV_START_WAVE >= 12 && !heroes.some(h => h._class === "Cleric")){
+    heroes.push({
+      name:"Cleric",
+      _class:"Cleric",
+      level: DEV_START_WAVE - 2,
+      xp:0,
+      hp:130,maxHp:130,
+      stamina:90,maxStamina:90,
+      attack:10,def:16,magic:22,resist:20,
+      speed:10,
+      critRate:0.1,critMult:1.5,
+      staminaRegenPct:0.16,
+      status:{},
+      equipment:{weapon:null,armor:null,accessory:null},
+      abilities:[
+    {name:"Heal",type:"support",power:34,cost:10,cooldownMax:0,cooldown:0,scale:"magic",target:"ally"},
+    {name:"Holy Bolt",type:"magic",power:16,cost:8,cooldownMax:0,cooldown:0,scale:"magic",target:"enemy"},
+    {name:"Regen Blessing",type:"support",power:20,cost:14,cooldownMax:2,cooldown:0,scale:"magic",apply:"regen",target:"allAllies"},
+    {name:"Prayer Guard",type:"support",power:0,cost:8,cooldownMax:3,cooldown:0,scale:"magic",apply:"defend",target:"self"}
+      ]
+    });
+  }
+
+  if(DEV_START_WAVE >= 21 && !heroes.some(h => h._class === "Mage")){
+    heroes.push({
+      name:"Mage",
+      _class:"Mage",
+      level: DEV_START_WAVE - 2,
+      xp:0,
+      hp:150,maxHp:150,
+      stamina:90,maxStamina:90,
+      attack:12,def:14,magic:32,resist:24,
+      speed:13,
+      critRate:0.15,critMult:1.6,
+      staminaRegenPct:0.14,
+      status:{},
+      equipment:{weapon:null,armor:null,accessory:null},
+      abilities:[
+        {name:"Firebolt",type:"magic",power:22,cost:8,cooldownMax:0,cooldown:0,scale:"magic",apply:"burn",target:"enemy"},
+        {name:"Lightning",type:"magic",power:34,cost:16,cooldownMax:2,cooldown:0,scale:"magic",target:"enemy"},
+        {name:"Explosion",type:"magic",power:42,cost:22,cooldownMax:4,cooldown:0,scale:"magic",apply:"burn",target:"allEnemies"},
+        {name:"Mana Shield",type:"support",power:0,cost:10,cooldownMax:3,cooldown:0,scale:"magic",target:"self",apply:"defend"}
+      ]
+    });
+  }
+
+  heroes.forEach(h => {
+    h.level = Math.max(h.level, DEV_START_WAVE - 2);
+
+    for(let i = 1; i < h.level; i++){
+      h.maxHp += 10 + Math.floor(i * 1.2);
+      h.attack += 2;
+      h.def += 2;
+      h.magic += 2;
+      h.resist += 2;
+
+    }
+
+    h.hp = h.maxHp;
+    if(h.maxMp != null) h.mp = h.maxMp;
+    if(h.maxStamina != null) h.stamina = h.maxStamina;
+
+    h.xp = 0;
+  });
+
+}
+
+
+/* ================= INIT ================= */
+
+function initGame(){
+  
+  applyDevStart();
+
+  enemies = createEnemies(wave);
+markSpawnAnimations(enemies);
+
+if(!DEV_MODE){
+  heroes.forEach(h => {
+    if(h._class === "Knight"){
+      h.justRecruited = true;
+    }
+  });
+}
+
+  heroes.forEach((h, partyIndex)=>{
+
+let pos = getUnitPosition(h, partyIndex);
+
+if (!DEV_MODE && h._class === "Knight" && !h._tutorialBuffApplied) {
+
+  h._tutorialBuffApplied = true;
+
+  h.maxHp += 60;
+  h.hp = h.maxHp;
+  h.def += 4;
+  h.attack += 2;
+  h.resist += 2;
+
+  h.status.StartingShield = 2;
+}
+
+  // combat stats
+  h.attackBase = h.attack;
+  h.defBase = h.def;
+  h.magicBase = h.magic;
+  h.resistBase = h.resist;
+
+  h.speedBase = h.speed;
+  h.critRateBase = h.critRate;
+  h.critMultBase = h.critMult;
+
+  // max resource stats
+  h.maxHpBase = h.maxHp;
+
+  if(h.maxMp != null){
+    h.maxMpBase = h.maxMp;
+  }
+
+  if(h.maxStamina != null){
+    h.maxStaminaBase = h.maxStamina;
+  }
+
+});
+
+render();
+showHero(0);
+resetStoryPanel();
+typeStory(storyText);
+rollInitiative(false);
+
+if(wave <= 3){
+  let knightTurnIndex = turnQueue.findIndex(q =>
+    q.entity && q.entity._class === "Knight"
+  );
+
+  if(knightTurnIndex > 0){
+    let knightTurn = turnQueue.splice(knightTurnIndex, 1)[0];
+    turnQueue.unshift(knightTurn);
+  }
+
+  turnIndex = 0;
+}
+
+renderTurnBar();
+
+let firstHeroTurn = turnQueue.find(q =>
+  q.type === "hero" && q.entity && q.entity.hp > 0 && !q.entity.dead
+);
+
+if(firstHeroTurn){
+  activeTurn = firstHeroTurn;
+  currentHeroIndex = heroes.indexOf(firstHeroTurn.entity);
+  showHero(currentHeroIndex);
+  renderHotbar();
+}
+
+setTimeout(() => {
+  nextTurn();
+}, 2500);
+
+el("log").addEventListener("click", () => {
+  skipAllLogs = true;
+});
+
+  log(`⚔️ WELCOME TO PASS TIME`, false);
+log(`━━━━━━━━━━━━━━━━━━━━━━━━`, false);
+log(`STORY:`);
+log(`Assassins have invaded the castle.`, false);
+log(`The King is in danger.`, false);
+log(`You are a loyal Knight rushing to defend the throne.`, false);
+log(`<span class="tutorialText">⚔️ TIPS: Use Skills (Quick Slash, Guard Break, etc.) to fight.</span>`, false);
+
+if(window.innerWidth <= 768){
+  log(`<span class="tutorialText">📱 Tap Skills to activate. Long Press/Hold Skills to view more info!</span>`, false);
+log(`Tap this Log area for extended tutorial text`, false);
+}
+}
+
+window.addEventListener("DOMContentLoaded", initGame);
+
+/* ================= INITIATIVE ================= */
+
+function rollInitiative(announceWave = false){
+
+turnQueue=[];
+turnIndex=0;
+
+heroes.forEach((h,i)=>{
+if(h.hp > 0 && !h.dead){
+
+let baseInit = getInitiative(h, wave);
+
+if (wave <= 3 && h._class === "Knight") {
+  baseInit += 10;
+}
+
+turnQueue.push({type:"hero", i, entity:h, init: baseInit});
+}
+});
+
+enemies.forEach((e,i)=>{
+if(e.hp > 0 && !e.dead){
+
+let baseInit = getInitiative(e, wave);
+if (wave === 1) {
+  baseInit = d20() - 20;
+}
+
+
+turnQueue.push({
+  type:"enemy",
+  i,
+  entity:e,
+  init: baseInit
+});
+
+}
+});
+
+turnQueue.sort((a,b)=>b.init-a.init);
+
+enemies.forEach(e => {
+  if(e && e.hp > 0 && !e.dead){
+    setEnemyIntent(e);
+  }
+});
+
+if(announceWave){
+  log(`🔥 ENTERING WAVE ${wave}`);
+  nextTurn();
+}
+}
+
+/* ================= TURN LOOP ================= */
+
+function scaleStat(base, level, growth){
+  return Math.floor(base * (1 + growth * (level - 1)));
+}
+
+function canSpawnEnemy(){
+  return enemies.length < maxEnemiesThisWave;
+}
+
+function nextTurn(){
+
+if(
+  !waveHandled &&
+  alive(enemies).length === 0
+){
+
+  if(animationPlaying){
+    setTimeout(nextTurn, 100);
+    return;
+  }
+
+  waveHandled = true;
+  wave++;
+
+if([5,10,15,20,25].includes(wave - 1)){
+  fullHealHeroes();
+}
+
+  log("🏆 Wave Cleared!");
+
+heroes = heroes.filter(h => h && h.hp > 0 && !h.dead);
+selectedAlly = null;
+
+/* WAVE XP */
+
+let waveXP = 5 + wave * 1;
+
+heroes.forEach(h => {
+  if (h.hp <= 0) return;
+  gainXP(h, waveXP);
+});
+
+log(`🏆 Each Hero gains ${waveXP} XP for clearing the wave!`);
+
+heroes.forEach(h=>{
+  delete h._regenCasters;
+});
+
+
+if(wave === 1 && !storyEventsTriggered[1]){
+  storyEventsTriggered[1] = true;
+
+  storyText = `
+<p>You rush to stop assassins from killing the King.</p>
+
+Blood stains the halls as defenders fall around you.
+
+<p>The castle is under attack.</p>
+  `;
+
+typeStory(storyText);
+
+}
+
+if(wave === 3 && !storyEventsTriggered[3]){
+  storyEventsTriggered[3] = true;
+
+  storyText = `
+The castle halls grow quieter.<br>
+The first assassins have fallen.
+
+<p>But the battle is far from over.</p>
+
+<p>More enemy forces are pouring into the lower halls.</p>
+
+The King's guard struggles to hold the line.
+  `;
+
+  typeStory(storyText);
+}
+
+if(wave === 5 && !storyEventsTriggered[5]){
+  storyEventsTriggered[5] = true;
+
+  storyText = `
+<p>You arrive in the throne room and face the final Assassins.</p>
+
+<p>The Assassin leader holds the king by the throat.</p>
+
+<p>Steel begins to clash in the silence.</p>
+
+Royal Guards rush in to aid your final stand.
+  `;
+
+typeStory(storyText);
+
+  recruit({
+    _class:"RoyalGuard",
+    name:"Royal Guard",
+    level:3,xp:0,
+    hp:50,maxHp:50,
+    attack:5,def:4,magic:1,resist:3,
+    speed:5,
+    critRate:0.03,critMult:1.3,
+    status:{},
+    abilities:[
+      {name:"Spear Strike",type:"physical",power:5,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
+      {name:"Shield Wall",type:"support",power:0,cooldownMax:3,cooldown:0,scale:"attack",target:"self",apply:"defend"}
+    ]
+  });
+
+  recruit({
+    _class:"RoyalGuard",
+    name:"Royal Guard",
+    level:3,xp:0,
+    hp:50,maxHp:50,
+    attack:5,def:4,magic:1,resist:3,
+    speed:5,
+    critRate:0.03,critMult:1.3,
+    status:{},
+    abilities:[
+      {name:"Spear Strike",type:"physical",power:5,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
+      {name:"Shield Wall",type:"support",power:0,cooldownMax:3,cooldown:0,scale:"attack",target:"self",apply:"defend"}
+    ]
+  });
+
+  recruit({
+    _class:"RoyalGuard",
+    name:"Royal Guard",
+    level:3,xp:0,
+    hp:50,maxHp:50,
+    attack:5,def:4,magic:1,resist:3,
+    speed:5,
+    critRate:0.03,critMult:1.3,
+    status:{},
+    abilities:[
+      {name:"Spear Strike",type:"physical",power:5,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
+      {name:"Shield Wall",type:"support",power:0,cooldownMax:3,cooldown:0,scale:"attack",target:"self",apply:"defend"}
+    ]
+  });
+}
+
+if(wave === 6 && !storyEventsTriggered[6]){
+  storyEventsTriggered[6] = true;
+
+heroes = heroes.filter(h => h._class !== "RoyalGuard");
+
+  storyText = `
+<p>When the mask finally falls, the truth is revealed:</p>
+<p>The Assassin is a royal...</p>
+Before anything can be said, the King's guards restrain you.<br>
+To protect the crown’s image, the King betrays you and sentences you to the Dungeon.
+<p>In the Dungeon cell, you meet a mysterious Rogue.
+Together, you plan your escape.</p>
+  `;
+
+typeStory(storyText);
+
+const rogueLevel = 4;
+
+recruit({
+  name:"Rogue",
+  _class:"Rogue",
+  level: rogueLevel,
+  xp:0,
+
+  hp: scaleStat(95, rogueLevel, 0.12),
+  maxHp: scaleStat(95, rogueLevel, 0.12),
+
+  attack: scaleStat(11, rogueLevel, 0.10),
+  def: scaleStat(5, rogueLevel, 0.08),
+  magic: scaleStat(4, rogueLevel, 0.10),
+  resist: scaleStat(4, rogueLevel, 0.08),
+
+  speed:12,
+  critRate:0.2,
+  critMult:1.8,
+
+  status:{},
+    equipment:{weapon:null,armor:null,accessory:null},
+abilities:[
+  {name:"Quick Strike",type:"physical",power:9,cooldownMax:0,cooldown:0,scale:"attack",target:"enemy"},
+  
+{name:"Backstab",type:"physical",power:24,cooldownMax:2,cooldown:0,scale:"attack",target:"enemy"},
+  
+{name:"Poison Blade",type:"physical",power:14,cooldownMax:3,cooldown:0,scale:"attack",apply:"poison",target:"enemy"},
+  
+{name:"Smoke Dodge",type:"support",power:0,cooldownMax:3,cooldown:0,scale:"attack",target:"self",apply:"defend"}
+
+]
+  });
+}
+
+if(wave === 8 && !storyEventsTriggered[8]){
+  storyEventsTriggered[8] = true;
+
+  storyText = `
+The Dungeon grows colder with every step.<br>
+The cries of prisoners fade into silence.
+
+<p>Something below the dungeon is watching.</p>
+  `;
+
+  typeStory(storyText);
+}
+
+if(wave === 10 && !storyEventsTriggered[10]){
+  storyEventsTriggered[10] = true;
+
+  storyText = `
+Massive gates grind open ahead.<br>
+Heavy chains drag across the stone floor.
+
+<p>The Dungeon Warden approaches.</p>
+  `;
+
+  typeStory(storyText);
+}
+
+if(wave === 11 && !storyEventsTriggered[11]){
+  storyEventsTriggered[11] = true;
+
+  storyText = `
+The Dungeon Warden falls.<br>
+You escape into caves beneath the kingdom.<br>
+
+<p>Goblins swarm in the darkness.</p>
+  `;
+
+typeStory(storyText);
+
+}
+
+if(wave === 12 && !storyEventsTriggered[11]){
+  storyEventsTriggered[11] = true;
+  
+  storyText = `
+The caves grow louder as you descend deeper below the dungeon.<br>
+Broken cages and scattered bones line the cavern walls.
+
+<p>Behind rusted bars, you spot a human in white robes imprisoned by goblins.</p>
+
+<p>She looks exhausted, but still alive.</p>
+`;
+
+
+typeStory(storyText);
+
+}
+
+if(wave === 13 && !storyEventsTriggered[12]){
+  storyEventsTriggered[12] = true;
+
+  storyText = `
+The goblin guards collapse one by one beneath your assault.<br>
+With the cavern finally silent, you force open the prison cage.
+
+<p>The Cleric steadies herself and grips her holy staff.</p>
+
+<p>"You have my thanks. I will fight beside you."</p>
+
+<p>The Cleric joins your party.</p>
+  `;
+
+typeStory(storyText);
+
+const clericLevel = 4;
+
+recruit({
+  name:"Cleric",
+  _class:"Cleric",
+  level: clericLevel,
+  xp:0,
+
+  hp: scaleStat(100, clericLevel, 0.16),
+  maxHp: scaleStat(100, clericLevel, 0.16),
+
+  attack: scaleStat(6, clericLevel, 0.10),
+  def: scaleStat(10, clericLevel, 0.14),
+  magic: scaleStat(15, clericLevel, 0.14),
+  resist: scaleStat(14, clericLevel, 0.14),
+
+  speed: 10,
+  critRate: 0.1,
+  critMult: 1.5,
+  status:{},
+
+    equipment:{weapon:null,armor:null,accessory:null},
+abilities:[
+  {name:"Heal",type:"support",power:34,cost:10,cooldownMax:0,cooldown:0,scale:"magic",target:"ally"},
+  
+{name:"Holy Bolt",type:"magic",power:16,cost:8,cooldownMax:0,cooldown:0,scale:"magic",target:"enemy"},
+  
+{name:"Regen Blessing",type:"support",power:20,cost:14,cooldownMax:2,cooldown:0,scale:"magic",apply:"regen",target:"allAllies"},
+  
+{name:"Prayer Guard",type:"support",power:0,cost:8,cooldownMax:2,cooldown:0,scale:"magic",apply:"defend",target:"self"}
+
+]
+  });
+}
+
+if(wave === 14 && !storyEventsTriggered[14]){
+  storyEventsTriggered[14] = true;
+
+  storyText = `
+The goblins grow more organized deeper in the caves.<br>
+Crude banners hang from the walls.
+
+<p>You are nearing their throne.</p>
+  `;
+
+  typeStory(storyText);
+}
+
+if(wave === 15 && !storyEventsTriggered[15]){
+  storyEventsTriggered[15] = true;
+
+  storyText = `
+The cave opens into a massive underground throne room.<br>
+Gold, bones, and stolen weapons cover the stone floor.
+
+<p>A monstrous goblin sits upon a crude throne.</p>
+
+The Goblin King rises.
+  `;
+
+  typeStory(storyText);
+}
+
+if(wave === 16 && !storyEventsTriggered[16]){
+  storyEventsTriggered[16] = true;
+
+  storyText = `
+The Goblin King is defeated.
+
+<p>The caves open into a corrupt forest.</p>
+  `;
+
+typeStory(storyText);
+
+}
+
+if(wave === 18 && !storyEventsTriggered[18]){
+  storyEventsTriggered[18] = true;
+
+  storyText = `
+The forest itself feels alive.<br>
+Roots twist unnaturally beneath your feet.
+
+<p>The corruption spreads far beyond the trees.</p>
+  `;
+
+  typeStory(storyText);
+}
+
+if(wave === 20 && !storyEventsTriggered[20]){
+  storyEventsTriggered[20] = true;
+
+  storyText = `
+The ground trembles as a colossal beast emerges from the forest depths.<br>
+Arcane energy floods the air.
+
+<p>You have reached the source of the corruption.</p>
+  `;
+
+  typeStory(storyText);
+}
+
+if(wave === 21 && !storyEventsTriggered[21]){
+  storyEventsTriggered[21] = true;
+
+  storyText = `
+On the brink of death, the mage warns of a vast magic empire beyond the forest.<br>
+Forcefully healed, the mage reluctantly joins your party.
+
+<p>The world ahead is fully corrupted by magic creatures.</p>
+
+There is no turning back.
+  `;
+
+typeStory(storyText);
+
+const mageLevel = 5;
+
+recruit({
+  name:"Mage",
+  _class:"Mage",
+  level: mageLevel,
+  xp:0,
+
+hp: scaleStat(100, mageLevel, 0.18),
+maxHp: scaleStat(100, mageLevel, 0.18),
+
+attack: scaleStat(7, mageLevel, 0.10),
+def: scaleStat(8, mageLevel, 0.12),
+magic: scaleStat(22, mageLevel, 0.20),
+resist: scaleStat(16, mageLevel, 0.16),
+speed: scaleStat(10, mageLevel, 0.08),
+
+  critRate: 0.15,
+  critMult: 1.6,
+  status:{},
+    equipment:{weapon:null,armor:null,accessory:null},
+abilities:[
+ {name:"Firebolt",type:"magic",power:22,cost:8,cooldownMax:0,cooldown:0,scale:"magic",apply:"burn",target:"enemy"},
+  
+{name:"Lightning",type:"magic",power:34,cost:16,cooldownMax:2,cooldown:0,scale:"magic",target:"enemy"},
+  {name:"Explosion",type:"magic",power:42,cost:22,cooldownMax:4,cooldown:0,scale:"magic",apply:"burn",target:"allEnemies"},
+  
+{name:"Mana Shield",type:"support",power:0,cost:10,cooldownMax:3,cooldown:0,scale:"magic",target:"self",apply:"defend"}
+
+]
+  });
+}
+
+if(wave === 23 && !storyEventsTriggered[23]){
+  storyEventsTriggered[23] = true;
+
+  storyText = `
+Ancient towers rise beyond the horizon.<br>
+The air crackles with unstable magic.
+
+<p>The Empire of Magic has not fallen.</p>
+It evolved into something far worse.
+  `;
+
+  typeStory(storyText);
+}
+
+if(wave === 25 && !storyEventsTriggered[25]){
+  storyEventsTriggered[25] = true;
+
+  storyText = `
+The Mage falls silent.<br>
+Even he seems afraid of what lies ahead.
+
+<p>The corruption no longer resembles life.</p>
+
+This is only the beginning.
+  `;
+
+  typeStory(storyText);
+}
+
+setTimeout(()=>{
+heroes.forEach(h=>{
+  delete h._regenCasters;
+});
+
+enemies=createEnemies(wave);
+markSpawnAnimations(enemies);
+waveHandled = false;
+
+render();
+rollInitiative(false);
+renderTurnBar();
+
+let firstHeroTurn = turnQueue.find(q =>
+  q.type === "hero" && q.entity && q.entity.hp > 0 && !q.entity.dead
+);
+
+if(firstHeroTurn){
+  activeTurn = firstHeroTurn;
+  currentHeroIndex = heroes.indexOf(firstHeroTurn.entity);
+  showHero(currentHeroIndex);
+  renderHotbar();
+}
+
+setTimeout(() => {
+  nextTurn();
+}, 1800);
+
+
+},300);
+
+return;
+}
+
+if(alive(heroes).length===0){
+log("💀 Defeat");
+return;
+}
+
+pruneTurnQueue();
+
+if(turnIndex >= turnQueue.length){
+  rollInitiative(false);
+  renderTurnBar();
+  nextTurn();
+  return;
+}
+
+let a = turnQueue[turnIndex++];
+let entity = a.entity;
+activeTurn = a;
+
+renderHotbar();
+
+if(!entity || entity.hp <= 0 || entity.dead){
+  activeTurn = null;
+  nextTurn();
+  return;
+}
+
+renderTurnBar();
+
+tickStatus(entity);
+tickTurn(entity);
+
+if(entity._stunned){
+entity._stunned=false;
+log(`${entity.name} is stunned and loses turn`);
+nextTurn();
+return;
+}
+
+if(a.type==="hero"){
+  showHero(heroes.indexOf(entity));
+  return;
+}
+
+enemyAI(enemies.indexOf(entity));
+activeTurn = null;
+renderTurnBar();
+
+setTimeout(() => {
+  nextTurn();
+}, 600);
+
+selectedAlly = null;
+}
+
+
+/* ================= HERO UI ================= */
+
+function showHero(i){
+
+currentHeroIndex = i;
+
+renderHotbar();
+
+let h=heroes[i];
+
+let weaponName = h.equipment?.weapon ? h.equipment.weapon.name : "None";
+let armorName = h.equipment?.armor ? h.equipment.armor.name : "None";
+let accessoryName = h.equipment?.accessory ? h.equipment.accessory.name : "None";
+
+let bonusText = [
+  h.equipment?.weapon ? formatItemStats(h.equipment.weapon) : "",
+  h.equipment?.armor ? formatItemStats(h.equipment.armor) : "",
+  h.equipment?.accessory ? formatItemStats(h.equipment.accessory) : ""
+].filter(x => x && x.trim()).join(" ");
+
+if(!bonusText){
+  bonusText = "No bonuses";
+}
+
+el("heroPanel").innerHTML=
+`
+<div class="heroUiLine">
+  LV ${h.level}
+</div>
+
+<div class="heroUiLine">
+${statusIcons(h)}
+</div>
+
+<div class="hpBar">
+  <div class="hpFill"
+  style="
+  width:${(h.hp/h.maxHp)*100}%;
+  background:${
+  (h.hp/h.maxHp) > 0.6
+  ? 'limegreen'
+  : (h.hp/h.maxHp) > 0.3
+  ? 'gold'
+  : 'red'
+  };
+  ">
+  </div>
+</div>
+
+<div class="heroUiLine" style="margin-top:2px;">
+  XP ${h.xp || 0}/${xpToNext(h.level)}
+</div>
+
+<div class="xpBar">
+  <div class="xpFill" style="width:${Math.min(100, ((h.xp||0)/xpToNext(h.level))*100)}%"></div>
+</div>
+
+<div class="heroUiSection heroUiSmall">
+  <b>EQUIPMENT:</b> ${weaponName} • ${armorName} • ${accessoryName}
+</div>
+
+<div class="heroUiSection heroUiSmall">
+  <b>BONUSES:</b> ${bonusText}
+</div>
+`;
+
+let ab=el("abilityPanel");
+
+ab.innerHTML = `
+`;
+
+const groupedAbilities = {
+  physical: [],
+  support: [],
+  magic: []
+};
+
+h.abilities.forEach((a, ai) => {
+  groupedAbilities[a.type]?.push({a, ai});
+});
+
+function renderSkillGroup(title, list){
+
+  if(list.length === 0) return;
+
+  let header = document.createElement("div");
+  header.innerHTML = `<br><b>${title}</b><hr>`;
+  ab.appendChild(header);
+
+  list.forEach(({a, ai}) => {
+
+    let b = document.createElement("button");
+
+    if(a.type === "physical"){
+      b.classList.add("skillAttack");
+    }
+
+    if(a.type === "magic"){
+      b.classList.add("skillMagic");
+    }
+
+    if(a.type === "support"){
+      b.classList.add("skillSupport");
+    }
+
+    let cost = h.stamina!=null ? (a.stamina||0) : (a.cost||0);
+
+  let costOk = true;
+
+if(h.stamina != null){
+  costOk = h.stamina >= cost;
+}
+else if(h.mp != null){
+  costOk = h.mp >= cost;
+}
+
+    b.disabled = !(costOk && a.cooldown<=0);
+
+    b.innerText = a.name;
+
+    if(a.cooldown > 0){
+      b.innerText = `${a.name} (${a.cooldown})`;
+    }
+
+if(
+  wave <= 2 &&
+  h._class === "Knight" &&
+  !knightTutorialSkillsUsed[a.name]
+){
+  b.classList.add("tutorialFlash");
+}
+
+b.onmouseenter = () => {
+  showAbilityPreview(h, a);
+};
+
+b.onmouseleave = () => {
+  resetStoryPanel();
+};
+
+    b.onclick=()=>heroAction(i,ai);
+
+    ab.appendChild(b);
+  });
+}
+
+renderSkillGroup("⚔ ATTACK", groupedAbilities.physical);
+renderSkillGroup("🛡 SUPPORT", groupedAbilities.support);
+renderSkillGroup("✨ MAGIC", groupedAbilities.magic);
+let spacer = document.createElement("div");
+spacer.style.height = "25px";
+ab.appendChild(spacer);
+
+let divider = document.createElement("hr");
+ab.appendChild(divider);
+
+let invBtn = document.createElement("button");
+invBtn.innerText = "⚔️ Inventory";
+invBtn.onclick = showBackpack;
+
+ab.appendChild(invBtn);
+
+resetStoryPanel();
+renderHotbar();
+}
+
+/* ================= HERO ACTION ================= */
+
+function getTargets(actor, ability){
+
+if(ability.target === "enemy"){
+
+  let validEnemies = alive(enemies);
+  if(validEnemies.length === 0) return [];
+
+  let target = null;
+
+  if(
+    selectedEnemy != null &&
+    enemies[selectedEnemy] &&
+    enemies[selectedEnemy].hp > 0
+  ){
+    target = enemies[selectedEnemy];
+  } else {
+    target = validEnemies[0];
+  }
+
+  return [target];
+}
+
+if(ability.target === "allAllies"){
+  return alive(heroes);
+}
+
+  if(ability.target === "allEnemies"){
+    return alive(enemies);
+  }
+
+if(ability.target === "ally"){
+
+  let validAllies = alive(heroes);
+  if(validAllies.length === 0) return [];
+
+  let target = null;
+
+  if(
+    selectedAlly != null &&
+    heroes[selectedAlly] &&
+    heroes[selectedAlly].hp > 0
+  ){
+    target = heroes[selectedAlly];
+  } else {
+    target = validAllies
+      .slice()
+      .sort((a,b)=>(a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
+  }
+
+  return [target];
+}
+
+  // SELF
+  if(ability.target === "self"){
+    return [actor];
+  }
+
+  return [];
+}
+
+function heroAction(hi,ai){
+
+let h=heroes[hi];
+
+if(
+  !activeTurn ||
+  activeTurn.type !== "hero" ||
+  activeTurn.entity !== h
+){
+  log("⏳ It is not this hero's turn.");
+  return;
+}
+
+
+if(!h || h.hp <= 0 || h.dead){
+  log(`💀 ${h?.name || "Hero"} cannot act.`);
+  render();
+  return;
+}
+
+let a=h.abilities[ai];
+
+if(wave <= 2 && h._class === "Knight"){
+  knightTutorialSkillsUsed[a.name] = true;
+}
+
+let knightAnim = null;
+let knightAnimDuration = 400;
+
+let royalGuardAnim = false;
+let royalGuardAnimDuration = 550;
+
+if(h._class === "Knight"){
+  if(a.apply === "defend"){
+    knightAnim = "knightShield";
+  }
+else if(a.name === "Quick Slash"){
+  knightAnim = "knightQuickAttack";
+  knightAnimDuration = 350;
+}
+  else if(a.name === "Shield Bash"){
+    knightAnim = "knightShieldBash";
+  }
+  else{
+    knightAnim = "knightAttack";
+  }
+}
+
+if(h._class === "RoyalGuard"){
+  if(a.name === "Spear Strike" || a.name === "Shield Wall"){
+    royalGuardAnim = true;
+  }
+}
+
+if(a.name === "Defend"){
+  applyStatus(h, "defend");
+
+  // put Defend on cooldown
+  setCooldown(h, a);
+
+  log(`${h.name} raises defenses (50% damage reduction for 1 turn)`);
+
+render();
+
+if(knightAnim){
+
+  // Only attack animations should dash toward a target
+  let dashTarget =
+    (a.target === "enemy" || a.target === "allEnemies")
+      ? targets?.[0]
+      : null;
+
+  setKnightAnimation(
+    knightAnim,
+    knightAnimDuration,
+    dashTarget
+  );
+}
+
+if(royalGuardAnim){
+  setRoyalGuardAnimation(h, a.name, knightAnimDuration, targets?.[0]);
+}
+
+endTurnAfterDelay(850);
+return;
+}
+
+if(a.type === "support" && (a.apply === "defend" || a.apply === "counter")){
+
+  let targets = getTargets(h, a);
+
+  targets.forEach(t => {
+    applyStatus(t, a.apply);
+
+if(a.aggroTurns){
+  t.aggro = a.aggroTurns;
+}
+
+  });
+
+  setCooldown(h, a);
+
+  log(`${h.name} uses ${a.name}!`);
+
+  render();
+
+if(knightAnim){
+  setKnightAnimation(knightAnim, knightAnimDuration, targets[0]);
+}
+
+if(royalGuardAnim){
+setRoyalGuardAnimation(h, a.name, knightAnimDuration, targets?.[0]);
+}
+
+endTurnAfterDelay(950);
+return;
+}
+
+if(a.name === "Guardian Aura"){
+
+alive(heroes).forEach(t=>{
+  let heal = a.power + Math.floor(h.def * 0.5);
+  let beforeHp = t.hp;
+  t.hp = Math.min(t.maxHp, t.hp + heal);
+  let actualHeal = t.hp - beforeHp;
+
+  if(actualHeal > 0){
+    showFloatText(t, `+${actualHeal}`, "heal");
+  }
+
+  applyStatus(t, "regen");
+});
+
+  setCooldown(h, a);
+  log(`${h.name} surrounds the party with Guardian Aura!`);
+render();
+
+if(knightAnim){
+  setKnightAnimation(knightAnim, knightAnimDuration);
+}
+
+if(royalGuardAnim){
+ setRoyalGuardAnimation(h, a.name, knightAnimDuration, targets?.[0]);
+}
+
+endTurnAfterDelay(950);
+return;
+}
+
+if(a.name === "Vanish"){
+
+  h.evade = 1;
+
+  setCooldown(h, a);
+  log(`${h.name} vanishes into the shadows!`);
+  render();
+  activeTurn = null;
+  waitForAnimationThenNextTurn();
+  return;
+}
+
+if(a.name === "Smoke Dodge"){
+
+  applyStatus(h, "defend");
+
+  setCooldown(h, a);
+
+  log(`${h.name} disappears into smoke and prepares to dodge!`);
+
+  render();
+
+if(h._class === "Rogue"){
+  setRogueAnimation(
+  h,
+  a.name,
+  500,
+  targets?.[0]
+);
+}
+
+endTurnAfterDelay(950);
+return;
+}
+
+if(a.name === "Sanctuary"){
+
+
+alive(heroes).forEach(t=>{
+  let heal = a.power + Math.floor(h.magic * 0.5);
+  let beforeHp = t.hp;
+  t.hp = Math.min(t.maxHp, t.hp + heal);
+  let actualHeal = t.hp - beforeHp;
+
+  if(actualHeal > 0){
+    showFloatText(t, `+${actualHeal}`, "heal");
+  }
+
+  if(t.status){
+    delete t.status.poison;
+    delete t.status.burn;
+    delete t.status.stun;
+  }
+
+  applyStatus(t, "regen");
+});
+
+  setCooldown(h, a);
+  log(`${h.name} casts Sanctuary! Poison, burn, and stun are cleansed.`);
+  render();
+
+endTurnAfterDelay(950);
+return;
+}
+
+if(a.name === "Arcane Barrier"){
+
+
+  h.arcaneBarrier = 45 + Math.floor(h.magic * 1.2);
+
+  setCooldown(h, a);
+  log(`${h.name} creates an Arcane Barrier absorbing ${h.arcaneBarrier} damage!`);
+  render();
+  activeTurn = null;
+  waitForAnimationThenNextTurn();
+  return;
+}
+
+if(a.cooldown>0) return;
+
+if(a.name === "Chain Lightning"){
+
+  let chainTargets = alive(enemies);
+  if(!chainTargets.length) return;
+
+  if(
+    selectedEnemy != null &&
+    enemies[selectedEnemy] &&
+    enemies[selectedEnemy].hp > 0
+  ){
+    let first = enemies[selectedEnemy];
+    chainTargets = [first, ...chainTargets.filter(e => e !== first)];
+  }
+
+  let multiplier = 1;
+
+  chainTargets.forEach(t => {
+    let chainSkill = {...a, power:Math.floor(a.power * multiplier)};
+    let dmg = computeDamage(h, t, chainSkill);
+
+playCardAnimation(h, "attackBump");
+t.hp = Math.max(0, t.hp - dmg);
+showFloatText(t, `-${dmg}`, "damage");
+playCardAnimation(t, "damageShake");
+
+    log(`${h.name}'s Chain Lightning hits ${t.name} for ${dmg}`);
+
+    if(t.hp <= 0){
+      t.hp = 0;
+      t.dead = true;
+      grantPartyXP(h, 8 + Math.floor(t.level * 2));
+    }
+
+    multiplier *= 0.72;
+  });
+
+  setCooldown(h, a);
+  render();
+
+  setTimeout(() => {
+    cleanupDeadEnemies();
+  }, 900);
+
+activeTurn = null;
+
+endTurnAfterDelay(950);
+return;
+}
+
+
+let targets = getTargets(h, a);
+if(!targets.length) return;
+
+targets.forEach(t => {
+
+if(a.apply === "regen" || a.name.toLowerCase().includes("heal") || a.name.toLowerCase().includes("resurrection")){
+
+    let heal = Math.floor(a.power * 1.4 + h.magic * 0.9);
+
+    let beforeHp = t.hp;
+
+t.hp = Math.min(t.maxHp, t.hp + heal);
+
+let actualHeal = t.hp - beforeHp;
+
+    log(`${h.name} heals ${t.name} for ${heal}`);
+
+/* HEALING XP */
+
+if(actualHeal > 0){
+  showFloatText(t, `+${actualHeal}`, "heal");
+  gainHealingXP(h, actualHeal);
+}
+
+  } else {
+
+let dmg = computeDamage(h, t, a);
+playCardAnimation(h, "attackBump");
+t.hp = Math.max(0, t.hp - dmg);
+showFloatText(t, `-${dmg}`, "damage");
+playCardAnimation(t, "damageShake");
+
+if(t.hp > 0 && t.status?.defend?.counter && dmg > 0){
+
+  let counterDmg = Math.max(
+    1,
+    Math.floor(getStats(t).def * 0.8)
+  );
+
+  h.hp = Math.max(0, h.hp - counterDmg);
+
+if(t.hp <= 0){
+  t.hp = 0;
+  t.dead = true;
+  selectedAlly = null;
+
+turnQueue = turnQueue.filter(q => q.entity !== t);
+
+  log(`💀 ${t.name} falls!`);
+  render();
+}
+
+  log(`🛡️ ${t.name} counters ${h.name} for ${counterDmg}`);
+}
+
+if(t.hp <= 0){
+  t.hp = 0;
+  t.dead = true;
+
+  let xpAmount = 8 + Math.floor(t.level * 2);
+  grantPartyXP(h, xpAmount);
+
+  render();
+
+  setTimeout(() => {
+    cleanupDeadEnemies();
+  }, 900);
+
+  if(enemies.length === 0){
+endTurnAfterDelay(950);
+return;
+  }
+
+}
+
+log(`${h.name} uses ${a.name} on ${t.name} for ${dmg}`);
+
+    if(a.apply){
+
+  applyStatus(t, a.apply);
+
+if(a.apply === "regen"){
+
+ if(!t._regenCasters){
+   t._regenCasters = [];
+}
+
+if(!t._regenCasters.includes(h)){
+  t._regenCasters.push(h);
+}
+}
+
+
+}
+
+  }
+
+});
+
+setCooldown(h, a);
+
+render();
+
+if(h._class === "Rogue"){
+  setRogueAnimation(
+  h,
+  a.name,
+  500,
+  targets?.[0]
+);
+}
+
+if(knightAnim){
+  setKnightAnimation(knightAnim, knightAnimDuration, targets[0]);
+}
+
+if(royalGuardAnim){
+  setRoyalGuardAnimation(h, a.name, knightAnimDuration, targets?.[0]);
+}
+
+endTurnAfterDelay(950);
+}
+
+function markSpawnAnimations(list){
+  list.forEach(unit => {
+    unit.justSummoned = true;
+
+    if(unit.bossId || unit.isBoss){
+      unit.justBossSpawn = true;
+    }
+  });
+}
+
+/* ================= ENEMY AI ================= */
+
+function summonEnemy(type, w){
+  if(enemies.length >= maxEnemiesThisWave) return false;
+
+  let summoned = createEnemy(type, w);
+
+summoned.justSummoned = true;
+
+// Keep bosses at the top; add summoned enemies after existing enemies
+enemies.push(summoned);
+
+
+  let init = getInitiative(summoned, wave);
+
+  let newTurn = {
+    type:"enemy",
+    i: enemies.indexOf(summoned),
+    entity: summoned,
+    init
+  };
+
+  let alreadyActed = turnQueue.slice(0, turnIndex);
+  let upcoming = turnQueue.slice(turnIndex);
+
+  upcoming.push(newTurn);
+  upcoming.sort((a,b)=>b.init-a.init);
+
+  turnQueue = alreadyActed.concat(upcoming);
+
+renderTurnBar();
+
+return summoned;
+}
+
+function setEnemyIntent(e){
+  if(!e || !e.abilities) return;
+
+  let usable = e.abilities.filter(a => a.cooldown <= 0);
+
+  if(usable.length === 0){
+    usable = [e.abilities[0]];
+  }
+
+  let skill = usable[Math.floor(Math.random() * usable.length)];
+
+  e.intent = skill.name;
+  e.intentSkillName = skill.name;
+}
+
+function enemyAI(i){
+
+let e = enemies[i];
+  
+if(!e || e.hp <= 0 || e.dead) return;
+
+log(`👹 ${e.name}'s turn!`);
+
+/* BOSS PHASES */
+
+if(
+  e.maxHp >= 300 &&
+  e.hp <= e.maxHp * 0.5 &&
+  !e.phase2
+){
+
+  e.phase2 = true;
+
+  e.attack += 8;
+  e.speed += 3;
+
+  log(`🔥 ${e.name} enters Phase 2!`);
+
+}
+
+  let targets = alive(heroes);
+  if(!targets.length) return;
+
+let usable = e.abilities.filter(a => a.cooldown <= 0);
+
+if(usable.length === 0){
+  usable = [e.abilities[0]];
+}
+
+let intentSkill = e.abilities.find(a => a.name === e.intentSkillName && a.cooldown <= 0);
+
+let summonSkillNames = [
+  "Call Reinforcements",
+  "Dungeon Alarm",
+  "Call Minions",
+  "Royal Guard Call"
+];
+
+let summonSkills = usable.filter(a =>
+  summonSkillNames.includes(a.name)
+);
+
+let nonSummonSkills = usable.filter(a =>
+  !summonSkillNames.includes(a.name)
+);
+
+if(e.bossId){
+  e.bossTurnCount = (e.bossTurnCount || 0) + 1;
+}
+
+let skill;
+
+if(
+  e.bossId === "goblin_king" &&
+  e.hp <= e.maxHp * 0.45 &&
+  !e.goblinGuardSummoned
+){
+  let guardSkill = usable.find(a => a.name === "Royal Guard Call");
+  if(guardSkill){
+    skill = guardSkill;
+  }
+}
+
+// Boss first turn: never summon
+if(!skill && e.bossId && e.bossTurnCount === 1){
+  skill = nonSummonSkills.length > 0
+    ? nonSummonSkills[Math.floor(Math.random() * nonSummonSkills.length)]
+    : usable[Math.floor(Math.random() * usable.length)];
+}
+
+// Boss second turn: 75% chance to summon if available
+else if(!skill && e.bossId && e.bossTurnCount === 2){
+  if(summonSkills.length > 0 && Math.random() < 0.75){
+    skill = summonSkills[Math.floor(Math.random() * summonSkills.length)];
+  } else if(!skill) {
+    skill = nonSummonSkills.length > 0
+      ? nonSummonSkills[Math.floor(Math.random() * nonSummonSkills.length)]
+      : usable[Math.floor(Math.random() * usable.length)];
+  }
+}
+
+// All other turns: normal random
+else if(intentSkill){
+  skill = intentSkill;
+}
+else {
+  skill = usable[Math.floor(Math.random() * usable.length)];
+}
+
+setCooldown(e, skill);
+
+/* ================= BOSS SUMMON ABILITIES ================= */
+
+if(e.bossId === "royal_assassin" && skill.name === "Call Reinforcements"){
+
+  let summonedEnemies = [];
+
+  let s1 = summonEnemy("assassin", wave);
+  if(s1) summonedEnemies.push(s1);
+
+  let s2 = summonEnemy("assassin", wave);
+  if(s2) summonedEnemies.push(s2);
+
+  if(summonedEnemies.length > 0){
+    log(`🗡️ ${e.name} calls assassins from the shadows!`);
+
+    summonedEnemies.forEach(summoned => {
+      log(`🧟 ${summoned.name} joins the battle!`);
+    });
+
+  } else {
+    log(`🗡️ ${e.name} tries to call reinforcements, but the battlefield is full!`);
+  }
+
+  render();
+  return;
+}
+
+if(e.bossId === "dungeon_warden" && skill.name === "Dungeon Alarm"){
+
+  let summoned = summonEnemy("guard", wave);
+
+  if(summoned){
+    log(`🚨 ${e.name} sounds the prison alarm!`);
+    log(`🧟 ${summoned.name} joins the battle!`);
+  } else {
+    log(`🚨 ${e.name} sounds the alarm, but no more guards can enter!`);
+  }
+
+  render();
+  return;
+}
+
+if(e.bossId === "goblin_king" && skill.name === "Call Minions"){
+
+  let summonedEnemies = [];
+
+  let s1 = summonEnemy("goblin", wave);
+  if(s1) summonedEnemies.push(s1);
+
+  let s2 = summonEnemy("hobgoblin", wave);
+  if(s2) summonedEnemies.push(s2);
+
+  let s3 = summonEnemy("elite_goblin", wave);
+  if(s3) summonedEnemies.push(s3);
+
+  if(summonedEnemies.length > 0){
+
+    log(`👑 ${e.name} slams his weapon into the stone and calls his horde!`);
+
+    summonedEnemies.forEach(summoned => {
+      log(`💥 ${summoned.icon || "🧟"} ${summoned.name} bursts onto the battlefield!`);
+    });
+
+  } else {
+
+    log(`👑 ${e.name} roars for reinforcements, but the battlefield is full!`);
+  }
+
+  render();
+  return;
+}
+
+if(e.bossId === "goblin_king" && skill.name === "Royal Guard Call"){
+
+  if(e.hp <= e.maxHp * 0.45){
+
+if(enemies.length >= maxEnemiesThisWave){
+  let removeIndex = enemies.findIndex(x => x && !x.bossId);
+  if(removeIndex !== -1){
+    enemies.splice(removeIndex, 1);
+  }
+}
+
+    let summoned = summonEnemy("goblin_king_guard", wave);
+
+    if(summoned){
+    e.goblinGuardSummoned = true;
+      log(`⚔️ ${e.name} pounds his chest and summons his royal guard!`);
+      log(`🛡️ ${summoned.icon || "🧟"} ${summoned.name} storms onto the battlefield!`);
+    } else {
+      log(`⚔️ ${e.name} calls his guard, but the battlefield is full!`);
+    }
+
+    render();
+    return;
+  }
+
+  skill = e.abilities[0];
+  e.intent = skill.name;
+}
+
+if(skill.target === "self" && skill.apply){
+  applyStatus(e, skill.apply);
+  log(`${e.name} uses ${skill.name}!`);
+  render();
+  return;
+}
+
+let aggroTargets = targets.filter(hero => hero.aggro && hero.aggro > 0);
+
+let weighted = [];
+
+(aggroTargets.length ? aggroTargets : targets).forEach(hero => {
+
+  let weight = hero.aggro && hero.aggro > 0
+    ? 8
+    : hero.def > 12 ? 3 : 1;
+
+  for(let i = 0; i < weight; i++){
+    weighted.push(hero);
+  }
+
+});
+
+let t = weighted[Math.floor(Math.random() * weighted.length)];
+
+if(skill.target === "allEnemies"){
+
+  alive(heroes).forEach(target=>{
+
+if(target.evade && target.evade > 0){
+  target.evade--;
+  log(`${target.name} evades ${e.name}'s attack!`);
+  return;
+}
+
+let dmg = computeDamage(e, target, skill);
+
+if(target.arcaneBarrier && target.arcaneBarrier > 0){
+  let absorb = Math.min(dmg, target.arcaneBarrier);
+  dmg -= absorb;
+  target.arcaneBarrier -= absorb;
+  log(`${target.name}'s Arcane Barrier absorbs ${absorb} damage!`);
+}
+
+playCardAnimation(e, "attackBump");
+target.hp = Math.max(0, target.hp - dmg);
+showFloatText(target, `-${dmg}`, "damage");
+playCardAnimation(target, "damageShake");
+
+if(target.hp <= 0){
+  target.hp = 0;
+  target.dead = true;
+  selectedAlly = null;
+  log(`💀 ${target.name} falls!`);
+  render();
+}
+
+if(target.hp > 0 && target.status?.defend?.counter && dmg > 0){
+  let counterDmg = Math.max(1, Math.floor(getStats(target).def * 0.8));
+  e.hp = Math.max(0, e.hp - counterDmg);
+  log(`🛡️ ${target.name} counters ${e.name} for ${counterDmg}`);
+
+  if(e.hp <= 0){
+    e.hp = 0;
+    e.dead = true;
+    cleanupDeadEnemies();
+    return;
+  }
+}
+
+    log(`${e.name} uses ${skill.name} on ${target.name} for ${dmg}`);
+
+    if(skill.apply){
+      applyStatus(target, skill.apply);
+    }
+  });
+
+} else {
+
+if(t.evade && t.evade > 0){
+  t.evade--;
+  log(`${t.name} evades ${e.name}'s attack!`);
+  render();
+  return;
+}
+
+let dmg = computeDamage(e, t, skill);
+
+if(t.arcaneBarrier && t.arcaneBarrier > 0){
+  let absorb = Math.min(dmg, t.arcaneBarrier);
+  dmg -= absorb;
+  t.arcaneBarrier -= absorb;
+  log(`${t.name}'s Arcane Barrier absorbs ${absorb} damage!`);
+}
+
+playCardAnimation(e, "attackBump");
+t.hp = Math.max(0, t.hp - dmg);
+showFloatText(t, `-${dmg}`, "damage");
+playCardAnimation(t, "damageShake");
+
+if(t.hp <= 0){
+  t.hp = 0;
+  t.dead = true;
+  selectedAlly = null;
+  log(`💀 ${t.name} falls!`);
+  render();
+}
+
+if(t.hp > 0 && t.status?.defend?.counter && dmg > 0){
+  let counterDmg = Math.max(1, Math.floor(getStats(t).def * 0.8));
+  e.hp = Math.max(0, e.hp - counterDmg);
+  log(`🛡️ ${t.name} counters ${e.name} for ${counterDmg}`);
+
+if(e.hp <= 0){
+  e.hp = 0;
+  e.dead = true;
+  cleanupDeadEnemies();
+  return;
+}
+}
+
+  log(`${e.name} uses ${skill.name} on ${t.name} for ${dmg}`);
+
+  if(skill.apply){
+    applyStatus(t, skill.apply);
+  }
+}
+
+setEnemyIntent(e);
+render();
+
+if(e.type === "assassin" || e.type === "assassin_boss"){
+  setAssassinAnimation(e, skill.name, 300, t);
+}
+}
+
+/* ================= TURN BAR ================= */
+
+function renderTurnBar(){
+
+  let bar = el("turnBar");
+  bar.innerHTML = "";
+
+  let visibleQueue = [
+    ...turnQueue.slice(Math.max(0, turnIndex - 1)),
+    ...turnQueue.slice(0, Math.max(0, turnIndex - 1))
+  ];
+
+  visibleQueue.slice(0, 8).forEach((t, index)=>{
+
+    let entity = t.entity;
+
+    if(!entity || entity.hp <= 0 || entity.dead) return;
+
+    let div = document.createElement("div");
+
+    div.className =
+    `turnIcon
+    ${t.type === "hero" ? "turnHero" : "turnEnemy"}
+    ${index === 0 ? "turnActive" : ""}`;
+
+div.innerHTML = `
+  <b>${t.type === "hero" ? "🛡️" : "👹"} ${entity.name}</b>
+`;
+
+    bar.appendChild(div);
+  });
+}
+
+/* ================= RENDER ================= */
+
+function getBattleBackground(){
+  if(wave >= 1 && wave <= 4){
+    return "sprites/castleHall_background.png";
+  }
+
+  if(wave === 5){
+    return "sprites/throneRoom_background.png";
+  }
+
+  return "sprites/castleHall_background.png";
+}
+
+function selectHeroTarget(index){
+  let h = heroes[index];
+  if(!h || h.hp <= 0 || h.dead) return;
+
+  selectedAlly = selectedAlly === index ? null : index;
+  render();
+  showHero(index);
+}
+
+function selectEnemyTarget(index){
+  let en = enemies[index];
+  if(!en || en.hp <= 0 || en.dead) return;
+
+  selectedEnemy = selectedEnemy === index ? null : index;
+  render();
+}
+
+function render(){
+
+let p=el("party");
+let e=el("enemies");
+
+p.innerHTML="";
+e.innerHTML="";
+
+document.querySelector(".screen").style.backgroundImage =
+  `url("${getBattleBackground()}")`;
+
+/* CLEAR DEAD TARGETS */
+
+if(
+  selectedEnemy != null &&
+  (!enemies[selectedEnemy] || enemies[selectedEnemy].hp <= 0)
+){
+  selectedEnemy = null;
+}
+
+if(
+  selectedAlly != null &&
+  (!heroes[selectedAlly] || heroes[selectedAlly].hp <= 0)
+){
+  selectedAlly = null;
+}
+
+heroes.forEach((h, partyIndex)=>{
+
+let pos = getUnitPosition(h, partyIndex);
+
+p.innerHTML +=`
+
+<div class="card battleUnit heroUnit
+${partyIndex === selectedAlly ? 'selected' : ''}
+${h.hp <= 0 ? 'dead' : ''}
+${h.justRecruited && !h.recruitAnimationQueued ? 'heroSpawn' : ''}"
+
+data-name="${h.name}"
+data-anim-id="${h.animId}"
+">
+
+<div style="
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+">
+
+<div class="unitUI heroBattleUI"
+data-anim-id="${h.animId}" ${selectedAlly === partyIndex ? 'uiOpen' : ''}"
+style="left:${pos.uiX}px; top:${pos.uiY}px;">
+  <div
+  class="unitNameLine selectableTarget"
+  onclick="event.stopPropagation(); selectHeroTarget(${partyIndex})"
+>
+    <b>${h.name}</b> <span>Lv.${h.level}</span>
+    <span class="statusIconSlot">${statusIcons(h)}</span>
+  </div>
+
+  <div class="hpBar">
+    <div class="hpFill"
+    style="
+    width:${(h.hp/h.maxHp)*100}%;
+    background:${
+    (h.hp/h.maxHp) > 0.6
+    ? 'limegreen'
+    : (h.hp/h.maxHp) > 0.3
+    ? 'gold'
+    : 'red'
+    };
+    ">
+    </div>
+  </div>
+
+  <div class="xpBar">
+    <div class="xpFill"
+    style="width:${Math.min(100, ((h.xp||0)/(xpToNext(h.level)||1))*100)}%">
+    </div>
+  </div>
+</div>
+
+${h._class === "Knight"
+  ? `<div
+  id="knightSprite"
+  class="knightSprite knightIdle selectableTarget"
+  onclick="event.stopPropagation(); selectHeroTarget(${partyIndex})"
+style="
+  background-image:url('sprites/knight_attack.png');
+  margin-top:-20px;
+  margin-bottom:-58px;
+  transform:translate(${pos.x}px, ${pos.y}px);
+"
+    ></div>`
+  : ""}
+
+${h._class === "RoyalGuard"
+  ? `<div
+      class="royalGuardSprite selectableTarget"
+      data-anim-id="${h.animId}"
+      onclick="event.stopPropagation(); selectHeroTarget(${partyIndex})"
+      style="
+        background-image:url('sprites/royalGuard_spear.png');
+        margin-top:-20px;
+        margin-right:0px;
+        margin-bottom:-35px;
+        transform:translate(${pos.x}px, ${pos.y}px);
+      "
+    ></div>`
+  : ""}
+
+${h._class === "Rogue"
+  ? `<div
+      class="rogueSprite selectableTarget"
+      data-anim-id="${h.animId}"
+      onclick="event.stopPropagation(); selectHeroTarget(${partyIndex})"
+      style="
+        background-image:url('sprites/rogue_quickAttack.png');
+        transform:translate(${pos.x}px, ${pos.y}px);
+      "
+    ></div>`
+  : ""}
+
+</div>
+</div>
+`;
+
+});
+
+
+enemies.forEach((en,i)=>{
+
+let pos = getEnemyPosition(i);
+
+e.innerHTML+=`
+<div class="card battleUnit enemyUnit
+${i===selectedEnemy ? 'selected' : ''}
+${en.dead ? 'dead' : ''}
+${!en.summonAnimationQueued && en.justBossSpawn ? 'bossSpawn' : !en.summonAnimationQueued && en.justSummoned ? 'summonedEnemy' : ''}"
+data-name="${en.name}"
+data-anim-id="${en.animId}"
+>
+
+<div class="unitUI enemyBattleUI ${en.bossId ? 'bossEnemyUI' : ''}"
+data-anim-id="${en.animId}"
+style="right:${Math.abs(pos.uiX)}px; top:${pos.uiY}px;">
+
+
+<div
+  class="unitNameLine selectableTarget"
+  onclick="event.stopPropagation(); selectEnemyTarget(${i})"
+>
+  <b>${en.icon || ""} ${en.name}</b>
+</div>
+
+<div class="hpBar">
+  <div class="hpFill"
+  style="
+  width:${(en.hp/en.maxHp)*100}%;
+  background:${enemyHpColor(en)};
+  (en.hp/en.maxHp) > 0.6
+  ? 'limegreen'
+  : (en.hp/en.maxHp) > 0.3
+  ? 'gold'
+  : 'red'
+  };
+  ">
+  </div>
+</div>
+
+${statusIcons(en)
+  ? `<div class="enemyStatusLine">${statusIcons(en)}</div>`
+  : ""
+}
+
+${en.intent
+  ? `<div class="enemyIntentLine ${enemyIntentClass(en.intent)}">
+      ${enemyIntentIcon(en.intent)} ${en.intent}
+    </div>`
+  : ""
+}
+
+</div>
+
+${en.type === "assassin" || en.type === "assassin_boss"
+  ? `<div
+      class="assassinSprite"
+      data-anim-id="${en.animId}"
+      style="
+        background-image:url('sprites/assassin_quickAttack.png');
+        transform:translate(${pos.x}px, ${pos.y}px);
+      "
+    >
+      <div
+        class="spriteClickHitbox selectableTarget"
+        onclick="event.stopPropagation(); selectEnemyTarget(${i})"
+      ></div>
+    </div>`
+  : ""}
+
+</div>
+`;
+});
+
+renderTurnBar();
+
+heroes.forEach((h, partyIndex)=>{
+
+let pos = getUnitPosition(h, partyIndex);
+  if(h.justRecruited && !h.recruitAnimationQueued){
+
+    h.recruitAnimationQueued = true;
+
+    setTimeout(() => {
+      h.justRecruited = false;
+      h.recruitAnimationQueued = false;
+
+      let enemiesStillAnimating = enemies.some(en =>
+        en.justSummoned || en.justBossSpawn
+      );
+
+      if(!enemiesStillAnimating){
+        render();
+      }
+
+    }, 1100);
+  }
+});
+
+enemies.forEach(en => {
+  if(en.justSummoned && !en.summonAnimationQueued){
+
+    en.summonAnimationQueued = true;
+
+    let delay = en.justBossSpawn ? 2600 : 1350;
+
+    setTimeout(() => {
+      en.justSummoned = false;
+      en.justBossSpawn = false;
+      en.summonAnimationQueued = false;
+      render();
+    }, delay);
+  }
+});
+
+}
+
+/* =========================================================
+   XP + LEVEL + CLASS EVOLUTION SYSTEM
+   ========================================================= */
+
+/* ---------- XP SETTINGS ---------- */
+
+function xpToNext(level){
+
+  return Math.floor(
+    70 * Math.pow(1.27, level)
+  );
+
+}
+
+function gainHealingXP(caster, amount){
+
+  let xp = Math.floor(amount * 1.5);
+
+  caster.xp = (caster.xp || 0) + xp;
+
+  log(`✨ ${caster.name} gains ${xp} healing XP`);
+
+  while(caster.xp >= xpToNext(caster.level)){
+    caster.xp -= xpToNext(caster.level);
+    levelUp(caster);
+  }
+}
+
+function gainXP(hero, amount){
+
+  hero.xp = (hero.xp || 0) + amount;
+
+  while(hero.xp >= xpToNext(hero.level)){
+    hero.xp -= xpToNext(hero.level);
+    levelUp(hero);
+  }
+}
+
+function grantPartyXP(killer, amount){
+
+  heroes.forEach(h => {
+    if(h.hp <= 0) return;
+
+    if(h === killer){
+      gainXP(h, amount);
+    } else {
+      gainXP(h, Math.floor(amount * 0.40));
+    }
+  });
+}
+
+/* ---------- LEVEL UP ---------- */
+function levelUp(h){
+
+  h.level++;
+
+  // 🎯 CORE GROWTH (controlled scaling)
+h.maxHp += 10 + Math.floor(h.level * 1.2);
+h.attack += 2;
+h.def += 2;
+h.magic += 2;
+h.resist += 2;
+
+  // restore
+  h.hp = h.maxHp;
+
+
+h.attackBase = h.attack;
+h.defBase = h.def;
+h.magicBase = h.magic;
+h.resistBase = h.resist;
+h.speedBase = h.speed;
+h.critRateBase = h.critRate;
+h.critMultBase = h.critMult;
+h.maxHpBase = h.maxHp;
+
+
+  log(`⬆️ ${h.name} reached Level ${h.level}`);
+
+  handleClassEvolution(h);
+  render();
+}
+
+// ====== SOFT CAP ====== //
+function softCap(x){
+  return 100 * (1 - Math.exp(-x / 100));
+}
+
+function applyEquipmentStats(hero){
+
+hero.attack = hero.attackBase || hero.attack;
+hero.def = hero.defBase || hero.def;
+hero.magic = hero.magicBase || hero.magic;
+hero.resist = hero.resistBase || hero.resist;
+hero.speed = hero.speedBase || hero.speed;
+hero.critRate = hero.critRateBase || hero.critRate;
+hero.critMult = hero.critMultBase || hero.critMult;
+
+hero.maxHp = hero.maxHpBase || hero.maxHp;
+
+let bonus = {
+  attack:0,
+  def:0,
+  magic:0,
+  resist:0,
+  hp:0,
+  speed:0,
+  critRate:0,
+  critMult:0
+};
+
+let eq = hero.equipment || {};
+
+for(let slot in eq){
+  let item = eq[slot];
+  if(!item || !item.stats) continue;
+
+  for(let stat in item.stats){
+
+    let value = Math.floor(item.stats[stat] * 0.85);
+
+    if(bonus[stat] != null){
+      bonus[stat] += value;
+    }
+  }
+}
+
+// apply bonuses
+hero.attack += bonus.attack;
+hero.def += bonus.def;
+hero.magic += bonus.magic;
+hero.resist += bonus.resist;
+
+hero.maxHp += bonus.hp;
+
+if(hero.maxMp != null){
+  hero.maxMp += bonus.mp || 0;
+}
+
+if(hero.maxStamina != null){
+  hero.maxStamina += bonus.stamina || 0;
+}
+
+hero.speed += bonus.speed;
+hero.critRate += bonus.critRate;
+hero.critMult += bonus.critMult;
+
+// clamp
+hero.hp = Math.min(hero.hp, hero.maxHp);
+}
+
+/* ---------- CLASS EVOLUTION ---------- */
+function handleClassEvolution(h){
+
+// ================= KNIGHT PATH =================
+if(h._class === "Knight"){
+
+  if(h.level >= 5 && !h._tier2){
+    h._tier2 = true;
+    h.name = "Vanguard";
+
+    h.maxHp += 30;
+    h.attack += 4;
+    h.def += 5;
+    h.resist += 3;
+
+    replaceAbility(h, "Quick Slash", {
+      name:"Blade Rush",
+      type:"physical",
+      power:16,
+      cooldownMax:0,
+      cooldown:0,
+      scale:"attack",
+      target:"enemy"
+    });
+
+    replaceAbility(h, "Defend", {
+      name:"Iron Wall",
+      type:"support",
+      power:0,
+      cooldownMax:2,
+      cooldown:0,
+      scale:"attack",
+      target:"self",
+      apply:"defend",
+      aggroTurns:2
+    });
+
+addAbility(h, {
+  name:"Counter Stance",
+  type:"support",
+  power:0,
+  cooldownMax:4,
+  cooldown:0,
+  scale:"attack",
+  target:"self",
+  apply:"counter",
+  aggroTurns:2
+});
+
+    log(`🌟 Knight evolved into ${h.name}!`);
+  }
+
+  if(h.level >= 10 && !h._tier3){
+    h._tier3 = true;
+    h.name = "Paladin";
+
+    h.maxHp += 40;
+    h.attack += 5;
+    h.def += 6;
+    h.resist += 6;
+    h.magic += 4;
+
+    replaceAbility(h, "Guard Break", {
+      name:"Holy Strike",
+      type:"magic",
+      power:38,
+      cost:16,
+      cooldownMax:3,
+      cooldown:0,
+      scale:"magic",
+      target:"enemy"
+    });
+
+    addAbility(h, {
+      name:"Guardians's Grace",
+      type:"support",
+      power:18,
+      cost:18,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"magic",
+      apply:"regen",
+      target:"allAllies"
+    });
+
+    log(`🌟 Vanguard evolved into ${h.name}!`);
+  }
+
+  if(h.level >= 15 && !h._tier4){
+    h._tier4 = true;
+    h.name = "Royal Champion";
+
+    h.maxHp += 55;
+    h.attack += 8;
+    h.def += 8;
+    h.resist += 7;
+    h.magic += 5;
+
+    replaceAbility(h, "Blade Rush", {
+      name:"Kingbreaker",
+      type:"physical",
+      power:24,
+      cooldownMax:0,
+      cooldown:0,
+      scale:"attack",
+      target:"enemy"
+    });
+
+    replaceAbility(h, "Guardians's Grace", {
+      name:"Guardian's Aura",
+      type:"support",
+      power:26,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"attack",
+      target:"allAllies"
+    });
+
+    log(`🌟 Paladin evolved into ${h.name}!`);
+  }
+}
+
+// ================= ROGUE PATH =================
+if(h._class === "Rogue"){
+
+  if(h.level >= 5 && !h._tier2){
+    h._tier2 = true;
+    h.name = "Shadow Rogue";
+
+    h.maxHp += 20;
+    h.attack += 5;
+    h.speed += 3;
+
+    replaceAbility(h, "Quick Strike", {
+      name:"Shadow Flurry",
+      type:"physical",
+      power:16,
+      stamina:6,
+      cooldownMax:0,
+      cooldown:0,
+      scale:"attack",
+      target:"enemy"
+    });
+
+    replaceAbility(h, "Backstab", {
+      name:"Venom Cut",
+      type:"physical",
+      power:28,
+      stamina:12,
+      cooldownMax:2,
+      cooldown:0,
+      scale:"attack",
+      target:"enemy",
+      apply:"poison"
+    });
+
+    replaceAbility(h, "Smoke Dodge", {
+      name:"Shadow Step",
+      type:"support",
+      power:0,
+      stamina:10,
+      cooldownMax:3,
+      cooldown:0,
+      scale:"attack",
+      target:"self",
+      apply:"defend"
+    });
+
+    log(`🌟 Rogue evolved into ${h.name}!`);
+  }
+}
+
+// ================= CLERIC PATH =================
+if(h._class === "Cleric"){
+
+  if(h.level >= 5 && !h._tier2){
+    h._tier2 = true;
+    h.name = "Priest";
+
+    h.maxHp += 20;
+    h.def += 3;
+    h.resist += 4;
+    h.magic += 3;
+
+    replaceAbility(h, "Heal", {
+      name:"Mass Heal",
+      type:"support",
+      power:34,
+      cost:16,
+      cooldownMax:3,
+      cooldown:0,
+      scale:"magic",
+      target:"allAllies"
+    });
+
+replaceAbility(h, "Holy Bolt", {
+  name:"Radiant Spear",
+  type:"magic",
+  power:18,
+  cost:12,
+  cooldownMax:0,
+  cooldown:0,
+  scale:"magic",
+  target:"enemy",
+  defensePierce:0.25
+});
+
+    log(`🌟 Cleric evolved into ${h.name}!`);
+  }
+
+  if(h.level >= 10 && !h._tier3){
+    h._tier3 = true;
+    h.name = "Saint";
+
+    h.maxHp += 30;
+    h.def += 4;
+    h.resist += 5;
+    h.magic += 5;
+
+    addAbility(h, {
+      name:"Sanctuary",
+      type:"support",
+      power:30,
+      cost:20,
+      cooldownMax:3,
+      cooldown:0,
+      scale:"magic",
+      target:"allAllies"
+    });
+
+    replaceAbility(h, "Radiant Spear", {
+      name:"Divine Light",
+      type:"magic",
+      power:26,
+      cost:22,
+      cooldownMax:0,
+      cooldown:0,
+      scale:"magic",
+      target:"allEnemies"
+    });
+
+    log(`🌟 Priest evolved into ${h.name}!`);
+  }
+
+  if(h.level >= 15 && !h._tier4){
+    h._tier4 = true;
+    h.name = "Angel";
+
+    h.maxHp += 40;
+    h.def += 5;
+    h.resist += 6;
+    h.magic += 7;
+
+    replaceAbility(h, "Mass Heal", {
+      name:"Miracle",
+      type:"support",
+      power:70,
+      cost:28,
+      cooldownMax:3,
+      cooldown:0,
+      scale:"magic",
+      target:"allAllies"
+    });
+
+    addAbility(h, {
+      name:"Judgment",
+      type:"magic",
+      power:58,
+      cost:28,
+      cooldownMax:4,
+      cooldown:0,
+      scale:"magic",
+      target:"enemy",
+      apply:"stun"
+    });
+
+    log(`🌟 Saint evolved into ${h.name}!`);
+  }
+}
+
+// ================= MAGE PATH =================
+if(h._class === "Mage"){
+
+  if(h.level >= 8 && !h._tier2){
+    h._tier2 = true;
+    h.name = "Warlock";
+
+    h.maxHp += 25;
+    h.def += 3;
+    h.resist += 5;
+    h.magic += 8;
+
+    replaceAbility(h, "Firebolt", {
+      name:"Void Bolt",
+      type:"magic",
+      power:22,
+      cost:16,
+      cooldownMax:0,
+      cooldown:0,
+      scale:"magic",
+      apply:"burn",
+      target:"enemy"
+    });
+
+replaceAbility(h, "Lightning", {
+  name:"Chain Lightning",
+  type:"magic",
+  power:42,
+  cost:22,
+  cooldownMax:2,
+  cooldown:0,
+  scale:"magic",
+  target:"enemy",
+  chain:true
+});
+
+    replaceAbility(h, "Mana Shield", {
+      name:"Arcane Barrier",
+      type:"support",
+      power:0,
+      cost:14,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"magic",
+      target:"self",
+      apply:"defend"
+    });
+
+    log(`🌟 Mage evolved into ${h.name}!`);
+  }
+
+  if(h.level >= 10 && !h._tier3){
+    h._tier3 = true;
+    h.name = "Archmage";
+
+    h.maxHp += 35;
+    h.def += 4;
+    h.resist += 6;
+    h.magic += 10;
+
+    replaceAbility(h, "Explosion", {
+      name:"Meteor",
+      type:"magic",
+      power:64,
+      cost:26,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"magic",
+      target:"allEnemies"
+    });
+
+    addAbility(h, {
+      name:"Arcane Renewal",
+      type:"support",
+      power:20,
+      cost:18,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"magic",
+      apply:"regen",
+      target:"allAllies"
+    });
+
+    log(`🌟 Warlock evolved into ${h.name}!`);
+  }
+
+  if(h.level >= 16 && !h._tier4){
+    h._tier4 = true;
+    h.name = "Void Sage";
+
+    h.maxHp += 45;
+    h.def += 5;
+    h.resist += 8;
+    h.magic += 14;
+
+    replaceAbility(h, "Void Bolt", {
+      name:"Void Storm",
+      type:"magic",
+      power:32,
+      cost:34,
+      cooldownMax:0,
+      cooldown:0,
+      scale:"magic",
+      target:"allEnemies",
+      apply:"burn"
+    });
+
+    addAbility(h, {
+      name:"Reality Break",
+      type:"magic",
+      power:88,
+      cost:38,
+      cooldownMax:5,
+      cooldown:0,
+      scale:"magic",
+      target:"enemy",
+      apply:"stun"
+    });
+
+    log(`🌟 Archmage evolved into ${h.name}!`);
+  }
+}
+
+}
+
+/* ---------- XP HOOK ---------- */
+
+function onKill(killer, enemy){
+
+  triggerPassive(killer, "kill");
+
+  // 🎯 DROP CHANCE (35% default)
+let drop = null;
+
+if(enemy.bossId){
+  let bossPool = items.filter(i => i.bossOnly === enemy.bossId);
+
+  if(bossPool.length > 0){
+    drop = bossPool[Math.floor(Math.random() * bossPool.length)];
+  }
+}
+
+if(drop || Math.random() < 0.35){
+
+if(enemy.bossId && items.some(i => i.bossOnly === enemy.bossId)){
+let bossPool = items.filter(i => i.bossOnly === enemy.bossId);
+
+if(bossPool.length > 0){
+  drop = bossPool[Math.floor(Math.random() * bossPool.length)];
+  }
+ }
+
+if(!drop){
+  drop = getLoot();
+}
+
+    log(`
+🎁 <b>${enemy.name}</b> dropped a <span style="color:${rarityColor(drop.rarity)}">
+${drop.rarity.toUpperCase()}
+</span> item: <b>${drop.name}</b>
+`);
+
+tryPartyEquipItem(drop);
+
+  } else {
+    log(`💨 ${enemy.name} dropped nothing`);
+  }
+}
+
+(function(){
+
+const baseHeroAction = heroAction;
+
+heroAction = function(hi, ai) {
+
+  let beforeEnemies = enemies.map(e => e.hp);
+
+  baseHeroAction(hi, ai);
+
+  let h = heroes[hi];
+
+  enemies.forEach((e, idx) => {
+
+    if (!e) return;
+
+    if (beforeEnemies[idx] > 0 && e.hp <= 0) {
+
+      onKill(h, e);
+
+      if(!animationPlaying){
+        render();
+      }
+
+    }
+
+  });
+
+};
+
+})();
+</script>
+</body>
+</html>
